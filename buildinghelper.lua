@@ -441,39 +441,11 @@ function BuildingHelper:IsRectangularAreaBlocked(boundingRect)
 end
 
 function snapToGrid64(coord)
-	local lowerBounds=coord
-	local upperBounds=coord
-	local floorCoord = math.floor(coord)
-	for i=floorCoord,floorCoord+64 do
-		if i%64 == 0 then
-			upperBounds = i
-		end
-	end
-	for i=floorCoord,floorCoord-64,-1 do
-		if i%64 == 0 then
-			lowerBounds = i
-		end
-	end
-
-	local d1=math.abs(lowerBounds-floorCoord)
-	local d2=math.abs(upperBounds-floorCoord)
-	local gridCoord = lowerBounds
-	if d2<d1 then gridCoord = upperBounds end
-	return gridCoord
+	return 64*math.floor(0.5+coord/64)
 end
 
 function snapToGrid32(coord)
-	local floorCoord = math.floor(coord)
-	for i=floorCoord,floorCoord+32 do
-		if i%64 ~= 0 and i%32 == 0 then
-			return i
-		end
-	end
-	for i=floorCoord,floorCoord-32,-1 do
-		if i%64 ~= 0 and i%32 == 0 then
-			return i
-		end
-	end
+	return 32+64*math.floor(coord/64)
 end
 
 
