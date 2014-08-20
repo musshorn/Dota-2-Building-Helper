@@ -7,7 +7,7 @@ Author: Myll
 
 Demo: https://www.youtube.com/watch?v=NUuDTq3k18w
 
-How to install: Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. If you got a seperate lua file, like buildings.lua and you're calling these function in it, put a require in there too.
+How to install: Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. If you got a seperate lua file, like buildings.lua and you're calling these functions in it, put a require in there too.
 
 **(1) BuildingHelper:AddBuildingToGrid(vPoint, nSize, vOwnersHero)**
 
