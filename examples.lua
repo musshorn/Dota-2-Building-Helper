@@ -1,7 +1,5 @@
 --[[
 	Some tips:
-	Make sure you add your units first somewhere in your code before adding any buildings, or else the units won't be checked for collision:
-	BuildingHelper:AddUnit(heroEntity)
 	Put BuildingHelper:BlockGridNavSquares(nMapLength) in your InitGameMode function.
 	If units are getting stuck put "BoundsHullName"   "DOTA_HULL_SIZE_TOWER" for buildings in npc_units_custom.txt
 ]]
