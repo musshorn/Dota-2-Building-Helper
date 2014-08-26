@@ -150,6 +150,21 @@ function BuildingHelper:BlockGridNavSquares(nMapLength)
 	print("Total GridNav squares added: " .. gridnavCount)
 end
 
+function BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
+	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
+		print("One of the values does not divide evenly into 64. Returning.")
+		return
+	end
+	local blockedCount = 0
+	for x=leftBorderX+32, rightBorderX-32, 64 do
+		for y=topBorderY-32, bottomBorderY+32,-64 do
+			GRIDNAV_SQUARES[makeVectorString(Vector(x,y,BH_Z))] = true
+			blockedCount=blockedCount+1
+		end
+	end
+	print("Total closed squares added: " .. blockedCount)
+end
+
 function BuildingHelper:SetForceUnitsAway(bForceAway)
 	FORCE_UNITS_AWAY=bForceAway
 end
