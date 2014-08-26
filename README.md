@@ -78,6 +78,12 @@ Adds the squares blocked by the GridNav to the custom grid's blocked squares. Th
 
 nMapLength: The map's length on one side. Map must be square shaped.
 
+**BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)**
+
+Closes squares in a rectangular area. Look at your map in hammer to find values for the parameters.
+Ex: BuildingHelper:BlockRectangularArea(-256, 64, 128, -64)
+The values must be evenly divisible by 64.
+
 **BuildingHelper:IsRectangularAreaBlocked(boundingRect)**
 Returns whether this rectangular area contains a blocked square (bool).
 
