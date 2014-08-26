@@ -56,7 +56,7 @@ Return the building's fire effect if it's not nil.
 
 **(3) BuildingHelper:AddUnit(unit)**
 
-Adds functionality to unit interactions with buildings.
+By default the library automatically checks if player heroes are in the way. You shouldn't use this function atm. In the future you'll be able to add your own units to check if they will collide with building placement.
 
 Sub-functions of (3):
 
