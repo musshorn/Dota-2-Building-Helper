@@ -3,6 +3,7 @@
 	Call BuildingHelper:AddPlayerHeroes() when everyone has spawned.
 	If player heroes change throughout the game do BuildingHelper:AddUnit(unit) after the hero change.
 	Put BuildingHelper:BlockGridNavSquares(nMapLength) in your InitGameMode function.
+	Remember to call building:RemoveBuilding before or after the building dies to re-open the closed squares.
 	If units are getting stuck put "BoundsHullName"   "DOTA_HULL_SIZE_TOWER" for buildings in npc_units_custom.txt
 ]]
 
