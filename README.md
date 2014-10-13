@@ -1,15 +1,18 @@
-Dota-2-Building-Helper
+Dota 2 Building Helper
 ======================
-
 Building Helper Library for Dota 2 Modding
 
 Author: Myll
 
+timers.lua done by www.github.com/bmddota
+
 Demo: https://www.youtube.com/watch?v=NUuDTq3k18w
 
-How to install: Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. If you got a seperate lua file, like buildings.lua and you're calling these functions in it, put a require in there too.
+How to install: Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. Do the same for timers.lua if you don't already have it.
 
-**(1) BuildingHelper:AddBuildingToGrid(vPoint, nSize, vOwnersHero)**
+Most useful functions:
+
+**(1) BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)**
 
 Adds a new building to the custom grid given the target point, the size, and the owner's hero.
 
@@ -17,7 +20,7 @@ Adds a new building to the custom grid given the target point, the size, and the
 
 *nSize:* Length of 1 side of the building. Buildings must be square shaped. Example: nSize=2 would be 2x64 units. So, the building covers (2x64) by (2x64) units, or a total of 4 squares.
 
-*vOwnersHero:* The hero which owns this building.
+*hOwnersHero:* The hero that owns this building.
 
 Returns -1 if a building can't be built at the location.
 
@@ -27,50 +30,41 @@ Returns -1 if a building can't be built at the location.
 
 Sub-functions of (2):
 
-**RemoveBuilding(nSize, bKill)**
+**building:RemoveBuilding(nSize, bKill)**
 
 Removes this building from the custom grid.
 *nSize:* The size of the building (see above). Must be the same size as when you added the building.
 
 *bKill:* Whether to ForceKill(true) the building or not. The building will also move -200 units in the Z direction. Set to false if you want your own death effects.
 
-**SetOwner(vOwner)**
-
-Sets the owner of this building (a hero).
-
-**GetOwner()**
-
-Returns the owner of this building (a hero).
-
-**UpdateHealth(fBuildTime, bScale, fMaxScale)**
+**building:UpdateHealth(fBuildTime, bScale, fMaxScale)**
 Updates this building's health over the build time.
 *bScale:* Whether to add the scaling effect or not.
 *fMaxScale:* The max model scale this unit should scale to. Can be anything if bScale is false.
 
-**SetFireEffect(fireEffect)**
-*fireEffect:* The modifier to add when the building's health is below 50%. Default is `modifier_jakiro_liquid_fire_burn`. Set to nil to have no effect.
+**building:UpdateFireEffect()**
+Checks to see if the building needs a fire effect applied (<= 50% health) or taken away (>50% health). A good time to call this would be in the entity_hurt event (when a building takes damage).
 
-
-**GetFireEffect()**
-Return the building's fire effect if it's not nil.
+**building:SetFireEffect(fireEffect)**
+*fireEffect:* The modifier to add when the building's health is below 50%. Default is `modifier_jakiro_liquid_fire_burn`.
 
 **(3) BuildingHelper:AddUnit(unit)**
 
-By default the library automatically checks if player heroes are in the way. You shouldn't use this function atm. In the future you'll be able to add your own units to check if they will collide with building placement.
+Adds a unit to the check-list of the helper.
 
 Sub-functions of (3):
 
-**GeneratePathingMap()**
+**unit:RemoveUnit()**
+
+Removes the unit from the check-list of the helper.
+
+**unit:GeneratePathingMap()**
 
 Generates a pathing map for this unit. Primarily used to determine if a unit is interfering with building placement. Returns table full of center points of squares which the unit occupies.
 
-**SetCustomRadius(nRadius)**
+**BuildingHelper:AddPlayerHeroes()**
 
-Sets a custom radius which will be used for determining the pathing map for a unit. Default is set to the unit's hull radius.
-
-**GetCustomRadius()**
-
-Returns the custom radius which will be used for determining the pathing map for a unit.
+Adds all player hero's to the check-list of the helper.
 
 **BuildingHelper:BlockGridNavSquares(nMapLength)**
 
@@ -84,33 +78,10 @@ Closes squares in a rectangular area. Look at your map in hammer to find values 
 Ex: BuildingHelper:BlockRectangularArea(-256, 64, 128, -64)
 The values must be evenly divisible by 64.
 
-**BuildingHelper:IsRectangularAreaBlocked(boundingRect)**
-Returns whether this rectangular area contains a blocked square (bool).
-
 **BuildingHelper:SetForceUnitsAway(bForceAway)**
 
 Whether units should be forced away when a building is built on top of them. If false, buildings can not be built on top of units. Default is false.
 
 Owners of buildings can always build buildings on top of themselves, and they are always forced away.
 
-Other functions:
-
-*BuildingHelper:PrintSquareFromCenterPoint(v)*
-
-*BuildingHelper:PrintSquareFromCenterPointShort(v)*
-
-*YourGameMode:DisplayBuildingGrids()*
-
-*snapToGrid64(coord)*
-
-Snaps a coordinate to the 64-resolution grid.
-
-*snapToGrid32(coord)*
-
-Snaps a coordinate to the 32-resolution grid, but not the 64 grid.
-
-*makeBoundingRect(leftBorderX, rightBorderX, topBorderY, bottomBorderY)*
-
-*tableContains(list, element)*
-
-Return true if the table contains this element, returns false otherwise.
+The bottom of buildinghelper.lua has some interesting utility functions that may be useful.
