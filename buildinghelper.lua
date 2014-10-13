@@ -1,5 +1,5 @@
 --[[
-Building Helper for RTS-style and tower defense maps in Dota 2. version: 0.3
+Building Helper for RTS-style and tower defense maps in Dota 2. version: 0.4
 Developed by Myll
 Credits to Ash47 and BMD for the timer code.
 Please give credit in your work if you use this. Thanks, and happy modding!
@@ -10,7 +10,6 @@ GRIDNAV_SQUARES = {}
 BUILDING_SQUARES = {}
 BH_UNITS = {}
 FORCE_UNITS_AWAY = false
-FIRE_GAME_EVENTS = false
 BH_Z=129
 
 if BuildingHelper == nil then
@@ -23,115 +22,6 @@ function BuildingHelper:new(o)
 	o = o or {}
 	setmetatable(o, BuildingHelper)
 	return o
-end
-
-function BuildingHelper:start()
-	BuildingHelper = self
-	self.timers = {}
-	
-	local wspawn = Entities:First()
-	wspawn:SetThink("Think", self, "buildinghelper", BUILDINGHELPER_THINK)
-end
-
-function BuildingHelper:Think()
-	if GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
-		return
-	end
-	
-	
-	
-	 -- Track game time, since the dt passed in to think is actually wall-clock time not simulation time.
-  local now = GameRules:GetGameTime()
-  --print("now: " .. now)
-  if BuildingHelper.t0 == nil then
-    BuildingHelper.t0 = now
-  end
-  local dt = now - BuildingHelper.t0
-  BuildingHelper.t0 = now
-
-  -- Process timers
-  for k,v in pairs(BuildingHelper.timers) do
-    local bUseGameTime = false
-    if v.useGameTime and v.useGameTime == true then
-      bUseGameTime = true;
-    end
-    -- Check if the timer has finished
-    if (bUseGameTime and GameRules:GetGameTime() > v.endTime) or (not bUseGameTime and Time() > v.endTime) then
-      -- Remove from timers list
-      BuildingHelper.timers[k] = nil
-      
-      -- Run the callback
-      local status, nextCall = pcall(v.callback, BuildingHelper, v)
-
-      -- Make sure it worked
-      if status then
-        -- Check if it needs to loop
-        if nextCall then
-          -- Change it's end time
-          v.endTime = nextCall
-          BuildingHelper.timers[k] = v
-        end
-
-        -- Update timer data
-        --self:UpdateTimerData()
-      else
-        -- Nope, handle the error
-        BuildingHelper:HandleEventError('Timer', k, nextCall)
-      end
-    end
-  end
-
-  return BUILDINGHELPER_THINK
-end
-
-function BuildingHelper:HandleEventError(name, event, err)
-  print(err)
-
-  -- Ensure we have data
-  name = tostring(name or 'unknown')
-  event = tostring(event or 'unknown')
-  err = tostring(err or 'unknown')
-
-  -- Tell everyone there was an error
-  --Say(nil, name .. ' threw an error on event '..event, false)
-  --Say(nil, err, false)
-
-  -- Prevent loop arounds
-  if not self.errorHandled then
-    -- Store that we handled an error
-    self.errorHandled = true
-  end
-end
-
-function BuildingHelper:CreateTimer(name, args)
-  if not args.endTime or not args.callback then
-    print("Invalid timer created: "..name)
-    return
-  end
-
-  BuildingHelper.timers[name] = args
-end
-
-function BuildingHelper:RemoveTimer(name)
-  BuildingHelper.timers[name] = nil
-end
-
-function BuildingHelper:RemoveTimers(killAll)
-  local timers = {}
-
-  if not killAll then
-    for k,v in pairs(BuildingHelper.timers) do
-      if v.persist then
-        timers[k] = v
-      end
-    end
-  end
-
-  BuildingHelper.timers = timers
-end
-
-function BuildingHelper:SetFireGameEvents(bFireGameEvents)
-	if bFireGameEvents then FIRE_GAME_EVENTS = true end
 end
 
 function BuildingHelper:BlockGridNavSquares(nMapLength)
@@ -162,7 +52,6 @@ function BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorde
 			blockedCount=blockedCount+1
 		end
 	end
-	print("Total closed squares added: " .. blockedCount)
 end
 
 function BuildingHelper:SetForceUnitsAway(bForceAway)
@@ -171,36 +60,36 @@ end
 
 -- Determines the squares that a unit is occupying.
 function BuildingHelper:AddUnit(unit)
-	if unit:GetPlayerID() == nil then
-		print("Not adding this unit because it's not a player's hero.")
-		return
-	end
-	
+
+	-- Remove the unit if it was already added.
+
 	unit.bGeneratePathingMap = false
 	unit.vPathingMap = {}
 	unit.bNeedsToJump=false
 	unit.bCantBeBuiltOn = true
-	unit.nCustomRadius = unit:GetHullRadius()
+	unit.fCustomRadius = unit:GetHullRadius()
 	unit.bForceAway = false
 	unit.bPathingMapGenerated = false
-	
-	local id = unit:GetPlayerID()
-	if BH_UNITS[id] ~= true then
-		BH_UNITS[id]=true
+	unit.bhID = DoUniqueString("bhID")
+
+	-- Set the id to the playerID if it's a player's hero.
+	if unit:IsHero() and unit:GetOwner() ~= nil then
+		unit.bhID = unit:GetPlayerID()
 	end
-	
-	function unit:SetCustomRadius(nRadius)
-		unit.nCustomRadius = nRadius
+	BH_UNITS[unit.bhID] = unit
+
+	function unit:SetCustomRadius(fRadius)
+		unit.fCustomRadius = fRadius
 	end
 	
 	function unit:GetCustomRadius()
-		return unit.nCustomRadius
+		return unit.fCustomRadius
 	end
 	
 	function unit:GeneratePathingMap()
 		--print("Generating pathing map...")
 		local pathmap = {}
-		local length = snapToGrid64(unit.nCustomRadius)
+		local length = snapToGrid64(unit.fCustomRadius)
 		length = length+128
 		local c = unit:GetAbsOrigin()
 		local x2 = snapToGrid64(c.x)
@@ -209,8 +98,8 @@ function BuildingHelper:AddUnit(unit)
 		local xs = {}
 		local ys = {}
 		for a=0,2*3.14,3.14/10 do
-			table.insert(xs, math.cos(a)*unit.nCustomRadius+c.x)
-			table.insert(ys, math.sin(a)*unit.nCustomRadius+c.y)
+			table.insert(xs, math.cos(a)*unit.fCustomRadius+c.x)
+			table.insert(ys, math.sin(a)*unit.fCustomRadius+c.y)
 		end
 		
 		local pathmapCount=0
@@ -235,13 +124,26 @@ function BuildingHelper:AddUnit(unit)
 	end
 end
 
-function BuildingHelper:RemoveUnit(unit)
-	if IsValidEntity(unit) and BH_UNITS[unit]==false then
-		BH_UNITS[unit]=nil
+function BuildingHelper:AddPlayerHeroes()
+	-- Add every player's hero to BH_UNITS if it's not already.
+	local heroes = HeroList:GetAllHeroes()
+	for i,v in ipairs(heroes) do
+		-- if it's a player's hero
+		if v:GetOwner() ~= nil then
+			BuildingHelper:AddUnit(v)
+		end
 	end
 end
 
-function BuildingHelper:AddBuildingToGrid(vPoint, nSize, vOwnersHero)
+function BuildingHelper:RemoveUnit(unit)
+	if unit.bhID == nil then
+		-- unit was never added.
+		return
+	end
+	BH_UNITS[unit.bhID] = nil
+end
+
+function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)
 	-- Remember, our blocked squares are defined according to the square's center.
 	local startX = snapToGrid32(vPoint.x)
 	local startY = snapToGrid32(vPoint.y)
@@ -263,45 +165,37 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, vOwnersHero)
 		bottomBorderY = centerY-halfSide}
 		
 	if BuildingHelper:IsRectangularAreaBlocked(buildingRect) then
-		print("Building location blocked. Returning -1")
-		-- It'd be wise to fire a game event when this returns -1 and use Actionscript to notify the player that the spot is blocked.
 		return -1
-	end
-	
-	-- Add every player's hero to BH_UNITS if it's not already.
-	local heroes = HeroList:GetAllHeroes()
-	for i,v in ipairs(heroes) do
-		if v:GetOwner() ~= nil and BH_UNITS[v:GetPlayerID()] ~= true then
-			print('adding unit')
-			self:AddUnit(v)
-		end
 	end
 	
 	-- The spot is not blocked, so add it to the closed squares.
 	local closed = {}
-	if BH_UNITS[vOwnersHero:GetPlayerID()] then
-		vOwnersHero:GeneratePathingMap()
+
+	if BH_UNITS[hOwnersHero:GetPlayerID()] then
+		hOwnersHero:GeneratePathingMap()
 	else
-		print("You haven't added the owner as a unit. No pathing map will be generated, and the owner may get stuck after building the building.")
+		print("[Building Helper] Error: You haven't added the owner as a unit.")
 	end
 	
 	for x=buildingRect.leftBorderX+32,buildingRect.rightBorderX-32,64 do
 		for y=buildingRect.topBorderY-32,buildingRect.bottomBorderY+32,-64 do
-			if vOwnersHero ~= nil and vOwnersHero.vPathingMap ~= nil then
+			if hOwnersHero ~= nil and hOwnersHero.vPathingMap ~= nil then
+				-- jump the owner if it's in the way of this building.
 				--print("Checking for jump...")
-				if vOwnersHero.bPathingMapGenerated and vOwnersHero.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
+				if hOwnersHero.bPathingMapGenerated and hOwnersHero.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
 					--print('Owner jump')
-					vOwnersHero.bNeedsToJump=true
+					hOwnersHero.bNeedsToJump=true
 				end
-				for id,b in pairs(BH_UNITS) do
-					local unit = PlayerResource:GetPlayer(id):GetAssignedHero()
-					if unit ~= vOwnersHero then
+				-- check if other units are in the way of this building. could make this faster.
+				for id,unit in pairs(BH_UNITS) do
+					if unit ~= hOwnersHero then
 						unit:GeneratePathingMap()
+						-- if a square in the pathing map overlaps a square of this building
 						if unit.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
+							-- force the units away if the bool is true.
 							if FORCE_UNITS_AWAY then
 								unit.bNeedsToJump=true
 							else
-								print("Building location blocked. Returning -1")
 								return -1
 							end
 						end
@@ -316,12 +210,11 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, vOwnersHero)
 	for i,v in ipairs(closed) do
 		BUILDING_SQUARES[makeVectorString(v)]=true
 	end
-	print("Successfully added " .. #closed .. " closed squares.")
+	--print("Successfully added " .. #closed .. " closed squares.")
 	return vBuildingCenter
 end
 
 function BuildingHelper:AddBuilding(building)
-	building.BuildingHelperTimer = self.timers[building.BuildingHelperTimer]
 	building.bUpdatingHealth = false
 	building.nBuildTime = 1
 	building.fTimeBuildingCompleted = GameRules:GetGameTime()+1
@@ -329,14 +222,12 @@ function BuildingHelper:AddBuilding(building)
 	building.nMaxHealth = building:GetMaxHealth()
 	building.nHealthInterval = 10
 	building.fireEffect="modifier_jakiro_liquid_fire_burn"
-	building.bFireEnabled=true
 	building.bForceUnits = false
 	building.fMaxScale=1.0
 	building.fCurrentScale = 0.0
 	building.bScale=false
 	
-	for id,b in pairs(BH_UNITS) do
-		local unit = PlayerResource:GetPlayer(id):GetAssignedHero()
+	for id,unit in pairs(BH_UNITS) do
 		if unit.bNeedsToJump then
 			--print("jumping")
 			FindClearSpaceForUnit(unit, unit:GetAbsOrigin(), true)
@@ -344,18 +235,26 @@ function BuildingHelper:AddBuilding(building)
 		end
 	end
 	
+	-- Work in progress.
 	function building:PackWithDummies()
 		local d = math.pow(0.5,0.5) + (math.pow(2,0.5) - math.pow(0.5,0.5))/2
 	end
 	
 	function building:SetFireEffect(fireEffect)
-		if fireEffect==nil then building.bFireEnabled = false return end
 		building.fireEffect = fireEffect
 	end
-	
-	function building:GetFireEffect()
-		if building.fireEffect ~= nil then
-			return building.fireEffect
+
+	function building:UpdateFireEffect()
+		if building.fireEffect == nil then
+			print('[Building Helper] Fire effect is nil.')
+			return
+		end
+		if building:GetHealth() <= building:GetMaxHealth()/2 and building.bUpdatingHealth == false then
+			if building:HasModifier(building.fireEffect) == false then
+				building:AddNewModifier(building, nil, building.fireEffect, nil)
+			end
+		elseif building:GetHealth() > building:GetMaxHealth()/2 and building:HasModifier(building.fireEffect) then
+			building:RemoveModifierByName(building.fireEffect)
 		end
 	end
 
@@ -377,15 +276,6 @@ function BuildingHelper:AddBuilding(building)
 	
 	function building:RemoveBuilding(nSize, bKill)
 		local center = building:GetAbsOrigin()
-		--DebugDrawCircle( center, Vector(0,255,0), 13.0, 3, false, 50 )
-		--[[Error check
-		if ((nSize%2 ~= 0) and (centerX%32 == 0 and centerY%32 == 0)) == false then
-			print("Invalid center! Returning.")
-			return
-		elseif ((nSize%2 == 0) and (centerX%64 == 0 and centerY%64 == 0)) == false then
-			print("Invalid center! Returning.")
-			return
-		end]]
 		local halfSide = (nSize/2.0)*64
 		local buildingRect = {leftBorderX = center.x-halfSide, 
 			rightBorderX = center.x+halfSide, 
@@ -395,10 +285,7 @@ function BuildingHelper:AddBuilding(building)
 		for x=buildingRect.leftBorderX+32,buildingRect.rightBorderX-32,64 do
 			for y=buildingRect.topBorderY-32,buildingRect.bottomBorderY+32,-64 do
 				for v,b in pairs(BUILDING_SQUARES) do
-					--if tableContains(v, Vector(x,y,BH_Z)) then
 					if v == makeVectorString(Vector(x,y,BH_Z)) then
-						--print("Removing " .. #v .. " squares.")
-						--table.remove(BUILDING_SQUARES, i)
 						BUILDING_SQUARES[v]=nil
 						removeCount=removeCount+1
 						if bKill then
@@ -412,21 +299,10 @@ function BuildingHelper:AddBuilding(building)
 		print("Removing " .. removeCount .. " squares.")
 	end
 	
-	function building:SetOwner(vOwner)
-		building.vOwner = vOwner
-	end
-	
-	function building:GetOwner()
-		return building.vOwner
-	end
-	
 	building.BuildingTimerName = DoUniqueString('building')
-	BuildingHelper:CreateTimer(building.BuildingTimerName, {
-    endTime = GameRules:GetGameTime(),
-    useGameTime = true,
-    callback = function(sheeptag, args)
-		local curTime = GameRules:GetGameTime()
-		
+
+	Timers:CreateTimer(building.BuildingTimerName, {
+    callback = function()
 		if IsValidEntity(building) then
 			if building.bUpdatingHealth then
 				if building:GetHealth() < building.nMaxHealth and GameRules:GetGameTime() <= building.fTimeBuildingCompleted then
@@ -445,19 +321,25 @@ function BuildingHelper:AddBuilding(building)
 				end
 			end
 
-			if building.bFireEnabled then
-				if building:GetHealth() <= building:GetMaxHealth()/2 and building.bUpdatingHealth == false then
-					if building:HasModifier(building.fireEffect) == false then
-						building:AddNewModifier(building, nil, building.fireEffect, nil)
-				end
-				elseif building:GetHealth() > building:GetMaxHealth()/2 and building:HasModifier(building.fireEffect) then
-					building:RemoveModifierByName(building.fireEffect)
-				end
+			-- clean up the timer if we don't need it.
+			if not building.bUpdatingHealth and not building.bScale then
+				return nil
 			end
+		-- not valid ent
+		else
+			return nil
 		end
 		
-	    return curTime
+	    return BUILDINGHELPER_THINK
     end})
+end
+
+------------------------ UTILITY FUNCTIONS --------------------------------------------
+
+-- use this to give building helper your map's Z. just feed any unit into this. it's just used for
+-- debug draw functions.
+function BuildingHelper:SetZ(unit)
+	BH_Z = unit:GetAbsOrigin().z+1
 end
 
 function makeVectorString(v)
@@ -501,7 +383,7 @@ function makeBoundingRect(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
 	return {leftBorderX = leftBorderX, rightBorderX = rightBorderX, topBorderY = topBorderY, bottomBorderY = bottomBorderY}
 end
 
---Set BH_Z to a little above whatever your map's base Z-level is if you want to print out squares with these functions.
+-- Use BuildingHelper:GetZ before using these print funcs.
 function BuildingHelper:PrintSquareFromCenterPoint(v)
 			DebugDrawLine(Vector(v.x-32,v.y+32,BH_Z), Vector(v.x+32,v.y+32,BH_Z), 255, 0, 0, false, 30)
 			DebugDrawLine(Vector(v.x-32,v.y+32,BH_Z), Vector(v.x-32,v.y-32,BH_Z), 255, 0, 0, false, 30)
@@ -517,7 +399,7 @@ end
 
 --Put this line in InitGameMode to use this function: Convars:RegisterCommand( "buildings", Dynamic_Wrap(YourGameMode, 'DisplayBuildingGrids'), "blah", 0 )
 
---[[function YourGameMode:DisplayBuildingGrids()
+--[[function GameMode:DisplayBuildingGrids()
   print( '******* Displaying Building Grids ***************' )
   local cmdPlayer = Convars:GetCommandClient()
   if cmdPlayer then
@@ -538,5 +420,3 @@ end
   end
   print( '*********************************************' )
 end]]
-
-BuildingHelper:start()
