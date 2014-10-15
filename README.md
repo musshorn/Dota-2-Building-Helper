@@ -16,7 +16,7 @@ v0.5 Changelog (10/14/14):
 
 2. RemoveBuilding no longer requires the building size.
 
-3. GeneratePathingMap is no longer used by default. Building owners will always try to find clear space whenever they build a building. GeneratePathingMap was mainly for checking if building placement was blocked by units. It's inefficient atm, and most tower defense games don't need to check if units are in the way (other than the owner). You can have the old way back with BuildingHelper:UsePathingMap(bUsePathingMap).
+3. GeneratePathingMap is no longer used by default. Building owners will always try to find clear space whenever they build a building. GeneratePathingMap was mainly for checking if building placement was blocked by units. It's inefficient atm, and most tower defense games don't need to check if units are in the way (other than the owner). You can have the old way back with BuildingHelper:UsePathingMap(true).
 
 4. Library is overall more efficient. Timers will remove themselves when not needed.
 
@@ -52,7 +52,7 @@ Updates this building's health over the build time.
 *fMaxScale:* The max model scale this unit should scale to. Can be anything if bScale is false.
 
 **building:Pack()**
-Places 4 invisible dummy units on each corner of the building. Useful when you want units to path around buildings rectangularly. The hull radii are adjusted accordingly. Ex:
+Places an invisible dummy units on each corner of the building. Useful when you want units to path around buildings rectangularly. The hull radii are adjusted accordingly. Ex:
 ![](http://i.imgur.com/FeSsHLE.jpg)
 
 **building:SetFireEffect(fireEffect)**
