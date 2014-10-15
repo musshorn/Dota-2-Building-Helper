@@ -10,6 +10,16 @@ Demo: https://www.youtube.com/watch?v=NUuDTq3k18w
 
 How to install: Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. Do the same for timers.lua if you don't already have it.
 
+v0.5 Changelog (10/14/14):
+
+1. Added circle-packing to buildings. See below for explanation.
+
+2. RemoveBuilding no longer requires the building size.
+
+3. GeneratePathingMap is no longer used by default. Building owners will always try to find clear space whenever they build a building. GeneratePathingMap was mainly for checking if building placement was blocked by units. It's inefficient atm, and most tower defense games don't need to check if units are in the way (other than the owner). You can have the old way back with BuildingHelper:UsePathingMap(bUsePathingMap).
+
+4. Library is overall more efficient. Timers will remove themselves when not needed.
+
 Most useful functions:
 
 **(1) BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)**
@@ -25,28 +35,28 @@ Adds a new building to the custom grid given the target point, the size, and the
 Returns -1 if a building can't be built at the location.
 
 **(2) BuildingHelper:AddBuilding(building)**
-
 *building:* The unit entity representing this building.
 
 Sub-functions of (2):
 
-**building:RemoveBuilding(nSize, bKill)**
-
+**building:RemoveBuilding(bKill)**
 Removes this building from the custom grid.
-*nSize:* The size of the building (see above). Must be the same size as when you added the building.
 
 *bKill:* Whether to ForceKill(true) the building or not. The building will also move -200 units in the Z direction. Set to false if you want your own death effects.
 
 **building:UpdateHealth(fBuildTime, bScale, fMaxScale)**
 Updates this building's health over the build time.
+
 *bScale:* Whether to add the scaling effect or not.
+
 *fMaxScale:* The max model scale this unit should scale to. Can be anything if bScale is false.
 
-**building:UpdateFireEffect()**
-Checks to see if the building needs a fire effect applied (<= 50% health) or taken away (>50% health). A good time to call this would be in the entity_hurt event (when a building takes damage).
+**building:Pack()**
+Places 4 invisible dummy units on each corner of the building. Useful when you want units to path around buildings rectangularly. The hull radii are adjusted accordingly. Ex:
+![](http://i.imgur.com/FeSsHLE.jpg)
 
 **building:SetFireEffect(fireEffect)**
-*fireEffect:* The modifier to add when the building's health is below 50%. Default is `modifier_jakiro_liquid_fire_burn`.
+*fireEffect:* The modifier to add when the building's health is below 50%. The modifier will remove itself if the building's health goes over 50% again. Default is `modifier_jakiro_liquid_fire_burn`. Set to nil to disable.
 
 **(3) BuildingHelper:AddUnit(unit)**
 
@@ -71,6 +81,15 @@ Adds all player hero's to the check-list of the helper.
 Adds the squares blocked by the GridNav to the custom grid's blocked squares. This means buildings can't be placed on squares blocked by the GridNav. Not called by default.
 
 nMapLength: The map's length on one side. Map must be square shaped.
+
+**BuildingHelper:AutoSetHull(bAutoSetHull)**
+Whether to automatically adjust building's hull radii when AddBuilding is called. The hull radius adjusts according to the building's size. Default is true. Will always adjust if a building is packed.
+
+**BuildingHelper:SetPacking(bPacking)**
+Whether to automatically pack buildings. Default is false.
+
+**BuildingHelper:UsePathingMap(bUsePathingMap)**
+Whether to check if units are in the way before placing buildings (other than the owner). This is inefficient atm. Default is false.
 
 **BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)**
 
