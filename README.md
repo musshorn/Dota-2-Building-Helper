@@ -4,7 +4,7 @@ Building Helper Library for Dota 2 Modding
 
 Author: Myll
 
-timers.lua done by www.github.com/bmddota
+timers.lua done by https://github.com/bmddota and https://github.com/ash47
 
 Demo: https://www.youtube.com/watch?v=NUuDTq3k18w
 
@@ -12,7 +12,7 @@ How to install: Place buildinghelper.lua in your vscripts and say `require('buil
 
 v0.5 Changelog (10/14/14):
 
-1. Added circle-packing to buildings. See below for explanation.
+1. Added circle-packing to buildings. See building:Pack() below.
 
 2. RemoveBuilding no longer requires the building size.
 
