@@ -8,7 +8,11 @@ timers.lua done by https://github.com/bmddota and https://github.com/ash47
 
 Demo: https://www.youtube.com/watch?v=NUuDTq3k18w
 
-How to install: Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. Do the same for timers.lua if you don't already have it.
+How to install: 
+
+1. Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. Do the same for timers.lua if you don't already have it.
+
+2. Merge ```npc_abilties_custom.txt``` and ```npc_units_custom.txt``` with your own.
 
 v0.5 Changelog (10/14/14):
 
