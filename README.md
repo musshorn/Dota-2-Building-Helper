@@ -52,7 +52,7 @@ Updates this building's health over the build time.
 *fMaxScale:* The max model scale this unit should scale to. Can be anything if bScale is false.
 
 **building:Pack()**
-Places an invisible dummy units on each corner of the building. Useful when you want units to path around buildings rectangularly. The hull radii are adjusted accordingly. Ex:
+Places an invisible dummy unit on each corner of the building. Useful when you want units to path around buildings rectangularly. The hull radii are adjusted accordingly. Ex:
 ![](http://i.imgur.com/FeSsHLE.jpg)
 
 **building:SetFireEffect(fireEffect)**
@@ -80,7 +80,7 @@ Adds all player hero's to the check-list of the helper.
 
 Adds the squares blocked by the GridNav to the custom grid's blocked squares. This means buildings can't be placed on squares blocked by the GridNav. Not called by default.
 
-nMapLength: The map's length on one side. Map must be square shaped.
+nMapLength: The map's length on one side. If you're using the tile editor it's 16384.
 
 **BuildingHelper:AutoSetHull(bAutoSetHull)**
 Whether to automatically adjust building's hull radii when AddBuilding is called. The hull radius adjusts according to the building's size. Default is true. Will always adjust if a building is packed.
@@ -92,9 +92,7 @@ Whether to automatically pack buildings. Default is false.
 Whether to check if units are in the way before placing buildings (other than the owner). This is inefficient atm. Default is false.
 
 **BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)**
-
-Closes squares in a rectangular area. Look at your map in hammer to find values for the parameters.
-Ex: BuildingHelper:BlockRectangularArea(-256, 64, 128, -64)
+Closes squares in a rectangular area. Look at your map in hammer to find values for the parameters. Ex: BuildingHelper:BlockRectangularArea(-256, 64, 128, -64)
 The values must be evenly divisible by 64.
 
 **BuildingHelper:SetForceUnitsAway(bForceAway)**
