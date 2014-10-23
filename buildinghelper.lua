@@ -204,10 +204,12 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)
 	-- The spot is not blocked, so add it to the closed squares.
 		local closed = {}
 
-		if BH_UNITS[hOwnersHero:GetPlayerID()] then
-			hOwnersHero:GeneratePathingMap()
-		else
-			print("[Building Helper] Error: You haven't added the owner as a unit.")
+		if UsePathingMap then
+			if BH_UNITS[hOwnersHero:GetPlayerID()] then
+				hOwnersHero:GeneratePathingMap()
+			else
+				print("[Building Helper] Error: You haven't added the owner as a unit.")
+			end
 		end
 	
 		for x=buildingRect.leftBorderX+32,buildingRect.rightBorderX-32,64 do
@@ -264,6 +266,8 @@ function BuildingHelper:AddBuilding(building)
 	building.packed = false
 	building.size = LastSize
 	building.owner = LastOwner
+	
+	building:SetControllableByPlayer(building.owner:GetPlayerID(), true)
 
 	function building:PackWithDummies()
 		--BH_A = math.pow(2,.5) --multi this by rad of building
