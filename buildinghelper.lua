@@ -15,7 +15,8 @@ UsePathingMap = false
 AUTO_SET_HULL = true
 BHGlobalDummySet = false
 PACK_ENABLED = false
-BH_Z=129
+BH_Z=166
+FIRE_EFFECTS_ENABLED = true
 
 -- Circle packing math.
 BH_A = math.pow(2,.5) --multi this by rad of building
@@ -65,6 +66,14 @@ end
 
 function BuildingHelper:SetForceUnitsAway(bForceAway)
 	FORCE_UNITS_AWAY=bForceAway
+end
+
+function BuildingHelper:DisableFireEffects(bFireEffects)
+	if bFireEffects then
+		FIRE_EFFECTS_ENABLED = false
+	elseif bFireEffects == false then
+		FIRE_EFFECTS_ENABLED = true
+	end
 end
 
 function BuildingHelper:SetPacking(bPacking)
@@ -175,14 +184,13 @@ function BuildingHelper:AutoSetHull(bAutoSetHull)
 	end
 end
 
-function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)
+function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hBuilder)
 	LastSize = nSize
-	LastOwner = hOwnersHero
+	LastOwner = hBuilder
 	-- Remember, our blocked squares are defined according to the square's center.
 	local startX = snapToGrid32(vPoint.x)
 	local startY = snapToGrid32(vPoint.y)
 	
-	-- This is the place where you should SetAbsOrigin the building.
 	local centerX = snapToGrid64(vPoint.x)
 	local centerY = snapToGrid64(vPoint.y)
 	-- Buildings are centered differently when the size is odd.
@@ -205,8 +213,8 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)
 		local closed = {}
 
 		if UsePathingMap then
-			if BH_UNITS[hOwnersHero:GetPlayerID()] then
-				hOwnersHero:GeneratePathingMap()
+			if BH_UNITS[hBuilder:GetPlayerID()] then
+				hBuilder:GeneratePathingMap()
 			else
 				print("[Building Helper] Error: You haven't added the owner as a unit.")
 			end
@@ -215,14 +223,14 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)
 		for x=buildingRect.leftBorderX+32,buildingRect.rightBorderX-32,64 do
 			for y=buildingRect.topBorderY-32,buildingRect.bottomBorderY+32,-64 do
 				if UsePathingMap then
-					if hOwnersHero ~= nil and hOwnersHero.vPathingMap ~= nil then
+					if hBuilder ~= nil and hBuilder.vPathingMap ~= nil then
 						-- jump the owner if it's in the way of this building.
-						if hOwnersHero.bPathingMapGenerated and hOwnersHero.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
-							hOwnersHero.bNeedsToJump=true
+						if hBuilder.bPathingMapGenerated and hBuilder.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
+							hBuilder.bNeedsToJump=true
 						end
 						-- check if other units are in the way of this building. could make this faster.
 						for id,unit in pairs(BH_UNITS) do
-							if unit ~= hOwnersHero then
+							if unit ~= hBuilder then
 								unit:GeneratePathingMap()
 								-- if a square in the pathing map overlaps a square of this building
 								if unit.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
@@ -238,7 +246,7 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)
 					end
 				-- don't use pathing map.
 				else
-					hOwnersHero.bNeedsToJump=true
+					hBuilder.bNeedsToJump=true
 				end
 				table.insert(closed,Vector(x,y,BH_Z))
 			end
@@ -251,11 +259,6 @@ end
 
 function BuildingHelper:AddBuilding(building)
 	building.bUpdatingHealth = false
-	building.nBuildTime = 1
-	building.fTimeBuildingCompleted = GameRules:GetGameTime()+1
-	building.vOrigin = building:GetAbsOrigin()
-	building.nMaxHealth = building:GetMaxHealth()
-	building.nHealthInterval = 10
 	building.bFireEffectEnabled = true
 	building.fireEffect="modifier_jakiro_liquid_fire_burn"
 	building.bForceUnits = false
@@ -264,15 +267,17 @@ function BuildingHelper:AddBuilding(building)
 	building.bScale=false
 	building.hullSet = false
 	building.packed = false
-	building.size = LastSize
-	building.owner = LastOwner
+	building.BHSize = LastSize
+	building.BHOwner = LastOwner
+	building.BHParticleDummies = {}
+	building.BHParticles = {}
 	
-	building:SetControllableByPlayer(building.owner:GetPlayerID(), true)
+	building:SetControllableByPlayer(building.BHOwner:GetPlayerID(), true)
 
 	function building:PackWithDummies()
 		--BH_A = math.pow(2,.5) --multi this by rad of building
 		--BH_cos45 = math.pow(.5,.5) -- cos(45)
-		local origin = building.vOrigin
+		local origin = building:GetAbsOrigin()
 		local rad = building:GetPaddedCollisionRadius()
 		local A = BH_A*rad
 		local B = rad
@@ -293,41 +298,36 @@ function BuildingHelper:AddBuilding(building)
 		local br_x = tr_x
 		local br_y = bl_y
 
-		local s = building.size*64
+		local s = building.BHSize*64
 		--DebugDrawCircle(origin, Vector(0,255,0), 5, building:GetPaddedCollisionRadius(), false, 60)
 		--DebugDrawBox(origin, Vector(-1*s/2,-1*s/2,0), Vector(s/2,s/2,0), 0, 0, 255, 0, 60)
 
 		local topRight = CreateUnitByName("npc_bh_dummy", Vector(tr_x,tr_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		local dummyPadding = 10
 		Timers:CreateTimer(function()
-			local abil = BHDummy:FindAbilityByName("bh_dummy_unit")
-			abil:ApplyDataDrivenModifier(BHDummy, topRight, "bh_dummy", {})
+			topRight:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			dummyPadding = topRight:GetCollisionPadding()
 			topRight:SetHullRadius(discRad-dummyPadding)
-			--print("Dummy collision padding: " .. topRight:GetCollisionPadding())
 			--DebugDrawCircle(Vector(tr_x,tr_y,BH_Z), Vector(255,0,0), 5, topRight:GetPaddedCollisionRadius(), false, 60)
 		end)
 
 		local topLeft = CreateUnitByName("npc_bh_dummy", Vector(tl_x,tl_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
-			local abil = BHDummy:FindAbilityByName("bh_dummy_unit")
-			abil:ApplyDataDrivenModifier(BHDummy, topLeft, "bh_dummy", {})
+			topLeft:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			topLeft:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(tl_x,tl_y,BH_Z), Vector(255,0,0), 5, topLeft:GetPaddedCollisionRadius(), false, 60)
 		end)
 
 		local bottomLeft = CreateUnitByName("npc_bh_dummy", Vector(bl_x,bl_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
-			local abil = BHDummy:FindAbilityByName("bh_dummy_unit")
-			abil:ApplyDataDrivenModifier(BHDummy, bottomLeft, "bh_dummy", {})
+			bottomLeft:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			bottomLeft:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(bl_x,bl_y,BH_Z), Vector(255,0,0), 5, bottomLeft:GetPaddedCollisionRadius(), false, 60)
 		end)
 
 		local bottomRight = CreateUnitByName("npc_bh_dummy", Vector(br_x,br_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
-			local abil = BHDummy:FindAbilityByName("bh_dummy_unit")
-			abil:ApplyDataDrivenModifier(BHDummy, bottomRight, "bh_dummy", {})
+			bottomRight:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			bottomRight:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(br_x,br_y,BH_Z), Vector(255,0,0), 5, bottomRight:GetPaddedCollisionRadius(), false, 60)
 		end)
@@ -336,8 +336,34 @@ function BuildingHelper:AddBuilding(building)
 		building.packed = true
 	end
 	
+	function building:ShowValidLocations()
+		local size = building.BHSize*64
+		local pos = building:GetAbsOrigin()
+		for x=pos.x-(size*3), pos.x+(size*3), size do
+			for y=pos.y+(size*3), pos.y-(size*3), -1*size do
+				--DebugDrawCircle(Vector(x,y,BH_Z), Vector(0,255,0), 5, 10, false, 60)
+				local halfSize = size/2
+				local rect = makeBoundingRect(x-halfSize, x+halfSize, y+halfSize, y-halfSize)
+				if not BuildingHelper:IsRectangularAreaBlocked(rect) then
+					local player = PlayerResource:GetPlayer(building.BHOwner:GetPlayerID())
+					local dummy = CreateUnitByName("npc_bh_dummy", Vector(x,y,BH_Z+3), false, nil, nil, building.BHOwner:GetTeam())
+					dummy:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
+					local particle = ParticleManager:CreateParticleForPlayer("particles/units/heroes/hero_lich/lich_ambient_ball_glow_b.vpcf", PATTACH_ABSORIGIN, dummy, player)
+					Timers:CreateTimer(15, function()
+						dummy:ForceKill(false)
+						ParticleManager:DestroyParticle(particle, true)
+					end)
+				end
+			end
+		end
+	end
+
+	function building:GetSize()
+		return building.BHSize
+	end
+
 	function building:SetFireEffect(fireEffect)
-		if fireEffect == nil then
+		if not fireEffect then
 			building.bFireEffectEnabled = false
 			return
 		end
@@ -346,10 +372,15 @@ function BuildingHelper:AddBuilding(building)
 
 	function building:UpdateHealth(fBuildTime, bScale, fMaxScale)
 		building:SetHealth(1)
-		building.nfBuildTime=fBuildTime
+		building.fBuildTime=fBuildTime
 		building.fTimeBuildingCompleted=GameRules:GetGameTime()+fBuildTime+fBuildTime*.35
-		building.nMaxHealth = building:GetMaxHealth()
-		building.nHealthInterval = building.nMaxHealth*1/(fBuildTime/BUILDINGHELPER_THINK)
+		building.fMaxHealth = building:GetMaxHealth()
+		building.nHealthInterval = building.fMaxHealth*1/(fBuildTime/BUILDINGHELPER_THINK)
+		if building.fMaxHealth < 200 then
+			-- increase by 50%
+			building.nHealthInterval = 1.5*building.nHealthInterval
+		end
+
 		building.bUpdatingHealth = true
 		if bScale then
 			building.fMaxScale=fMaxScale
@@ -362,7 +393,7 @@ function BuildingHelper:AddBuilding(building)
 	
 	function building:RemoveBuilding(bKill)
 		local center = building:GetAbsOrigin()
-		local halfSide = (building.size/2.0)*64
+		local halfSide = (building.BHSize/2.0)*64
 		local buildingRect = {leftBorderX = center.x-halfSide, 
 			rightBorderX = center.x+halfSide, 
 			topBorderY = center.y+halfSide, 
@@ -389,7 +420,7 @@ function BuildingHelper:AddBuilding(building)
 			end
 		end
 	end
-	
+
 	-- Dynamic packing.
 	function building:Pack()
 		-- setup global dummy if not already setup.
@@ -409,7 +440,7 @@ function BuildingHelper:AddBuilding(building)
 	end
 
 	function building:SetHull()
-		building:SetHullRadius(building.size*64/2-building:GetCollisionPadding())
+		building:SetHullRadius(building.BHSize*64/2-building:GetCollisionPadding())
 	end
 
 	if (AUTO_SET_HULL) then
@@ -437,7 +468,7 @@ function BuildingHelper:AddBuilding(building)
 
 	-- find clear space for building owner on the next frame.
 	  Timers:CreateTimer(function()
-      	FindClearSpaceForUnit(building.owner, building.owner:GetAbsOrigin(), true)
+      	FindClearSpaceForUnit(building.BHOwner, building.BHOwner:GetAbsOrigin(), true)
    	  end)
 
 	--[[for id,unit in pairs(BH_UNITS) do
@@ -454,9 +485,11 @@ function BuildingHelper:AddBuilding(building)
     callback = function()
 		if IsValidEntity(building) then
 			if building.bUpdatingHealth then
-				if building:GetHealth() < building.nMaxHealth and GameRules:GetGameTime() <= building.fTimeBuildingCompleted then
+				if building:GetHealth() < building.fMaxHealth and GameRules:GetGameTime() <= building.fTimeBuildingCompleted then
 					building:SetHealth(building:GetHealth()+building.nHealthInterval)
 				else
+					building:SetHealth(building.fMaxHealth)
+					building:SetModelScale(building.fMaxScale)
 					building.bUpdatingHealth=false
 				end
 			end
@@ -483,24 +516,26 @@ function BuildingHelper:AddBuilding(building)
     end})
 	
 	-- fire effect timer
-	building.fireTimer = DoUniqueString('fire')
-	Timers:CreateTimer(building.fireTimer, {
-    callback = function()
-		if building.bFireEffectEnabled and IsValidEntity(building) then
-			if building:GetHealth() <= building:GetMaxHealth()/2 and building.bUpdatingHealth == false then
-				if building:HasModifier(building.fireEffect) == false then
-					building:AddNewModifier(building, nil, building.fireEffect, nil)
+	if FIRE_EFFECTS_ENABLED then
+		building.fireTimer = DoUniqueString('fire')
+		Timers:CreateTimer(building.fireTimer, {
+	    callback = function()
+			if building.bFireEffectEnabled and IsValidEntity(building) then
+				if building:GetHealth() <= building:GetMaxHealth()/2 and building.bUpdatingHealth == false then
+					if building:HasModifier(building.fireEffect) == false then
+						building:AddNewModifier(building, nil, building.fireEffect, nil)
+					end
+				elseif building:GetHealth() > building:GetMaxHealth()/2 and building:HasModifier(building.fireEffect) then
+					building:RemoveModifierByName(building.fireEffect)
 				end
-			elseif building:GetHealth() > building:GetMaxHealth()/2 and building:HasModifier(building.fireEffect) then
-				building:RemoveModifierByName(building.fireEffect)
+			-- fire disabled or not valid ent.
+			else
+				return nil
 			end
-		-- fire disabled or not valid ent.
-		else
-			return nil
-		end
-		
-	    return .25
-    end})
+			
+		    return .25
+	    end})
+	end
 end
 
 ------------------------ UTILITY FUNCTIONS --------------------------------------------
@@ -508,7 +543,7 @@ end
 -- use this to give building helper your map's Z. just feed any unit into this. it's just used for
 -- debug draw functions.
 function BuildingHelper:SetZ(unit)
-	BH_Z = unit:GetAbsOrigin().z+1
+	BH_Z = unit:GetAbsOrigin().z+5
 end
 
 function makeVectorString(v)
