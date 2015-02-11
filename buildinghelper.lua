@@ -22,16 +22,37 @@ FIRE_EFFECTS_ENABLED = true
 BH_A = math.pow(2,.5) --multi this by rad of building
 BH_cos45 = math.pow(.5,.5) -- cos(45)
 
-if BuildingHelper == nil then
-	print('[BUILDING HELPER] Creating Building Helper')
-	BuildingHelper = {}
-	BuildingHelper.__index = BuildingHelper
-end
+BuildingHelper = {}
+BuildingGhostAbilities = {}
 
-function BuildingHelper:new(o)
-	o = o or {}
-	setmetatable(o, BuildingHelper)
-	return o
+
+function BuildingHelper:Init(  )
+	local abilities = LoadKeyValues("scripts/npc/npc_abilities_custom.txt")
+	local items = LoadKeyValues("scripts/npc/npc_items_custom.txt")
+	--PrintTable(abilities)
+	for abil_name,abil_info in pairs(abilities) do
+		if type(abil_info) == "table" and tostring(abil_info["UseBuildingGhost"]) == "1" then
+			local modelVal = abil_info["BuildingGhostModel"]
+			if modelVal ~= nil then
+				BuildingGhostAbilities[tostring(abil_name)] = {["model"] = tostring(modelVal), ["toggle"] = -1}
+			else
+				BuildingGhostAbilities[tostring(abil_name)] = {["toggle"] = -1}
+			end
+		end
+	end
+	-- abils and items can't have the same name or the item will override the ability.
+	for abil_name,abil_info in pairs(items) do
+		if type(abil_info) == "table" and tostring(abil_info["UseBuildingGhost"]) == "1" then
+			local modelVal = abil_info["BuildingGhostModel"]
+			if modelVal ~= nil then
+				BuildingGhostAbilities[tostring(abil_name)] = {["model"] = tostring(modelVal), ["toggle"] = -1}
+			else
+				BuildingGhostAbilities[tostring(abil_name)] = {["toggle"] = -1}
+			end
+		end
+	end
+	print("BuildingGhostAbilities: ")
+	PrintTable(BuildingGhostAbilities)
 end
 
 -- nMapLength is 16384 if you're using the tile editor.
@@ -41,37 +62,53 @@ function BuildingHelper:BlockGridNavSquares(nMapLength)
 	-- Check the center of each square on the map to see if it's blocked by the GridNav.
 	for x=-halfLength+32, halfLength-32, 64 do
 		for y=halfLength-32, -halfLength+32,-64 do
-			if GridNav:IsTraversable(Vector(x,y,BH_Z)) == false or GridNav:IsBlocked(Vector(x,y,BH_Z)) then
-				GRIDNAV_SQUARES[makeVectorString(Vector(x,y,BH_Z))] = true
+			if GridNav:IsTraversable(Vector(x,y,0)) == false or GridNav:IsBlocked(Vector(x,y,0)) then
+				GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
 				gridnavCount=gridnavCount+1
 			end
 		end
 	end
-	print("Total GridNav squares added: " .. gridnavCount)
+	--print("Total GridNav squares added: " .. gridnavCount)
 end
 
 function BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
 	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
-		print("One of the values does not divide evenly into 64. Returning.")
+		print("[BuildingHelper] Error in BlockRectangularArea. One of the values does not divide evenly into 64.")
 		return
 	end
 	local blockedCount = 0
 	for x=leftBorderX+32, rightBorderX-32, 64 do
 		for y=topBorderY-32, bottomBorderY+32,-64 do
-			GRIDNAV_SQUARES[makeVectorString(Vector(x,y,BH_Z))] = true
+			GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
 			blockedCount=blockedCount+1
 		end
 	end
 end
+--[[ TODO: make BlockRectangularArea like DebugDrawBox.
+function BuildingHelper:BlockRectangularArea(vCenter, vMin, vMax)
+	local leftBorderX = vCenter.x-vMin.x
+
+	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
+		print("[BuildingHelper] Error in BlockRectangularArea. One of the values does not divide evenly into 64.")
+		return
+	end
+	local blockedCount = 0
+	for x=leftBorderX+32, rightBorderX-32, 64 do
+		for y=topBorderY-32, bottomBorderY+32,-64 do
+			GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
+			blockedCount=blockedCount+1
+		end
+	end
+end]]
 
 function BuildingHelper:SetForceUnitsAway(bForceAway)
 	FORCE_UNITS_AWAY=bForceAway
 end
 
-function BuildingHelper:DisableFireEffects(bFireEffects)
-	if bFireEffects then
+function BuildingHelper:DisableFireEffects(bDisableFireEffects)
+	if bDisableFireEffects then
 		FIRE_EFFECTS_ENABLED = false
-	elseif bFireEffects == false then
+	else
 		FIRE_EFFECTS_ENABLED = true
 	end
 end
@@ -94,7 +131,22 @@ function BuildingHelper:UsePathingMap(bUsePathingMap)
 end
 
 -- Determines the squares that a unit is occupying.
-function BuildingHelper:AddUnit(unit)
+function BuildingHelper:AddUnit(unit, bHasBuildingGhostAbilities)
+
+	if bHasBuildingGhostAbilities then
+		Timers:CreateTimer(BUILDINGHELPER_THINK, function()
+			-- Iterate through everything to get the building ghost abils.
+			for i=0, hero:GetAbilityCount()-1 do
+				local abil = hero:GetAbilityByIndex(i)
+				if abil ~= nil then
+					if BuildingGhostAbilities[abil:GetAbilityName()] ~= nil then
+						-- This is a building ghost abil on this unit.
+
+					end
+				end
+			end
+		end)
+	end
 
 	-- Remove the unit if it was already added.
 
@@ -142,10 +194,10 @@ function BuildingHelper:AddUnit(unit)
 			for x=unitRect.leftBorderX+32,unitRect.rightBorderX-32,64 do
 				for y=unitRect.topBorderY-32,unitRect.bottomBorderY+32,-64 do
 					if (xs[i] >= x-32 and xs[i] <= x+32) and (ys[i] >= y-32 and ys[i] <= y+32) then
-						if pathmap[makeVectorString(Vector(x,y,BH_Z))] ~= true then
-							--BuildingHelper:PrintSquareFromCenterPointShort(Vector(x,y,BH_Z))
+						if pathmap[VectorString(Vector(x,y,0))] ~= true then
+							--BuildingHelper:PrintSquareFromCenterPointShort(Vector(x,y,0))
 							pathmapCount=pathmapCount+1
-							pathmap[makeVectorString(Vector(x,y,BH_Z))]=true
+							pathmap[VectorString(Vector(x,y,0))]=true
 						end
 					end
 				end
@@ -188,16 +240,14 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hBuilder)
 	LastSize = nSize
 	LastOwner = hBuilder
 	-- Remember, our blocked squares are defined according to the square's center.
-	local startX = snapToGrid32(vPoint.x)
-	local startY = snapToGrid32(vPoint.y)
-	
 	local centerX = snapToGrid64(vPoint.x)
 	local centerY = snapToGrid64(vPoint.y)
 	-- Buildings are centered differently when the size is odd.
 	if nSize%2 ~= 0 then
-		centerX=startX
-		centerY=startY
+		centerX=snapToGrid32(vPoint.x)
+		centerY=snapToGrid32(vPoint.y)
 	end
+
 	local vBuildingCenter = Vector(centerX,centerY,vPoint.z)
 	local halfSide = (nSize/2)*64
 	local buildingRect = {leftBorderX = centerX-halfSide, 
@@ -209,7 +259,7 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hBuilder)
 		return -1
 	end
 	
-	-- The spot is not blocked, so add it to the closed squares.
+		-- The spot is not blocked, so add it to the closed squares.
 		local closed = {}
 
 		if UsePathingMap then
@@ -225,7 +275,7 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hBuilder)
 				if UsePathingMap then
 					if hBuilder ~= nil and hBuilder.vPathingMap ~= nil then
 						-- jump the owner if it's in the way of this building.
-						if hBuilder.bPathingMapGenerated and hBuilder.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
+						if hBuilder.bPathingMapGenerated and hBuilder.vPathingMap[VectorString(Vector(x,y,0))] then
 							hBuilder.bNeedsToJump=true
 						end
 						-- check if other units are in the way of this building. could make this faster.
@@ -233,7 +283,7 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hBuilder)
 							if unit ~= hBuilder then
 								unit:GeneratePathingMap()
 								-- if a square in the pathing map overlaps a square of this building
-								if unit.vPathingMap[makeVectorString(Vector(x,y,BH_Z))] then
+								if unit.vPathingMap[VectorString(Vector(x,y,0))] then
 									-- force the units away if the bool is true.
 									if FORCE_UNITS_AWAY then
 										unit.bNeedsToJump=true
@@ -248,11 +298,11 @@ function BuildingHelper:AddBuildingToGrid(vPoint, nSize, hBuilder)
 				else
 					hBuilder.bNeedsToJump=true
 				end
-				table.insert(closed,Vector(x,y,BH_Z))
+				table.insert(closed,Vector(x,y,0))
 			end
 		end
 		for i,v in ipairs(closed) do
-			BUILDING_SQUARES[makeVectorString(v)]=true
+			BUILDING_SQUARES[VectorString(v)]=true
 		end
 	return vBuildingCenter
 end
@@ -302,34 +352,34 @@ function BuildingHelper:AddBuilding(building)
 		--DebugDrawCircle(origin, Vector(0,255,0), 5, building:GetPaddedCollisionRadius(), false, 60)
 		--DebugDrawBox(origin, Vector(-1*s/2,-1*s/2,0), Vector(s/2,s/2,0), 0, 0, 255, 0, 60)
 
-		local topRight = CreateUnitByName("npc_bh_dummy", Vector(tr_x,tr_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		local topRight = CreateUnitByName("npc_bh_dummy", Vector(tr_x,tr_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		local dummyPadding = 10
 		Timers:CreateTimer(function()
 			topRight:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			dummyPadding = topRight:GetCollisionPadding()
 			topRight:SetHullRadius(discRad-dummyPadding)
-			--DebugDrawCircle(Vector(tr_x,tr_y,BH_Z), Vector(255,0,0), 5, topRight:GetPaddedCollisionRadius(), false, 60)
+			--DebugDrawCircle(Vector(tr_x,tr_y,0), Vector(255,0,0), 5, topRight:GetPaddedCollisionRadius(), false, 60)
 		end)
 
-		local topLeft = CreateUnitByName("npc_bh_dummy", Vector(tl_x,tl_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		local topLeft = CreateUnitByName("npc_bh_dummy", Vector(tl_x,tl_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
 			topLeft:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			topLeft:SetHullRadius(discRad-dummyPadding)
-			--DebugDrawCircle(Vector(tl_x,tl_y,BH_Z), Vector(255,0,0), 5, topLeft:GetPaddedCollisionRadius(), false, 60)
+			--DebugDrawCircle(Vector(tl_x,tl_y,0), Vector(255,0,0), 5, topLeft:GetPaddedCollisionRadius(), false, 60)
 		end)
 
-		local bottomLeft = CreateUnitByName("npc_bh_dummy", Vector(bl_x,bl_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		local bottomLeft = CreateUnitByName("npc_bh_dummy", Vector(bl_x,bl_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
 			bottomLeft:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			bottomLeft:SetHullRadius(discRad-dummyPadding)
-			--DebugDrawCircle(Vector(bl_x,bl_y,BH_Z), Vector(255,0,0), 5, bottomLeft:GetPaddedCollisionRadius(), false, 60)
+			--DebugDrawCircle(Vector(bl_x,bl_y,0), Vector(255,0,0), 5, bottomLeft:GetPaddedCollisionRadius(), false, 60)
 		end)
 
-		local bottomRight = CreateUnitByName("npc_bh_dummy", Vector(br_x,br_y,BH_Z), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		local bottomRight = CreateUnitByName("npc_bh_dummy", Vector(br_x,br_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
 			bottomRight:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			bottomRight:SetHullRadius(discRad-dummyPadding)
-			--DebugDrawCircle(Vector(br_x,br_y,BH_Z), Vector(255,0,0), 5, bottomRight:GetPaddedCollisionRadius(), false, 60)
+			--DebugDrawCircle(Vector(br_x,br_y,0), Vector(255,0,0), 5, bottomRight:GetPaddedCollisionRadius(), false, 60)
 		end)
 
 		building.packers = {topRight, topLeft, bottomLeft, bottomRight}
@@ -341,12 +391,12 @@ function BuildingHelper:AddBuilding(building)
 		local pos = building:GetAbsOrigin()
 		for x=pos.x-(size*3), pos.x+(size*3), size do
 			for y=pos.y+(size*3), pos.y-(size*3), -1*size do
-				--DebugDrawCircle(Vector(x,y,BH_Z), Vector(0,255,0), 5, 10, false, 60)
+				--DebugDrawCircle(Vector(x,y,0), Vector(0,255,0), 5, 10, false, 60)
 				local halfSize = size/2
 				local rect = makeBoundingRect(x-halfSize, x+halfSize, y+halfSize, y-halfSize)
 				if not BuildingHelper:IsRectangularAreaBlocked(rect) then
 					local player = PlayerResource:GetPlayer(building.BHOwner:GetPlayerID())
-					local dummy = CreateUnitByName("npc_bh_dummy", Vector(x,y,BH_Z+3), false, nil, nil, building.BHOwner:GetTeam())
+					local dummy = CreateUnitByName("npc_bh_dummy", Vector(x,y,0+3), false, nil, nil, building.BHOwner:GetTeam())
 					dummy:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 					local particle = ParticleManager:CreateParticleForPlayer("particles/units/heroes/hero_lich/lich_ambient_ball_glow_b.vpcf", PATTACH_ABSORIGIN, dummy, player)
 					Timers:CreateTimer(15, function()
@@ -402,7 +452,7 @@ function BuildingHelper:AddBuilding(building)
 		for x=buildingRect.leftBorderX+32,buildingRect.rightBorderX-32,64 do
 			for y=buildingRect.topBorderY-32,buildingRect.bottomBorderY+32,-64 do
 				for v,b in pairs(BUILDING_SQUARES) do
-					if v == makeVectorString(Vector(x,y,BH_Z)) then
+					if v == VectorString(Vector(x,y,0)) then
 						BUILDING_SQUARES[v]=nil
 						removeCount=removeCount+1
 						if bKill then
@@ -419,6 +469,10 @@ function BuildingHelper:AddBuilding(building)
 				unit:ForceKill(true)
 			end
 		end
+	end
+
+	function building:OnCompleted(callback)
+		building.onCompletedCallback = callback
 	end
 
 	-- Dynamic packing.
@@ -489,7 +543,10 @@ function BuildingHelper:AddBuilding(building)
 					building:SetHealth(building:GetHealth()+building.nHealthInterval)
 				else
 					building:SetHealth(building.fMaxHealth)
-					building:SetModelScale(building.fMaxScale)
+					if building.onCompletedCallback ~= nil then
+						building.onCompletedCallback()
+						building.onCompletedCallback = nil
+					end
 					building.bUpdatingHealth=false
 				end
 			end
@@ -499,6 +556,7 @@ function BuildingHelper:AddBuilding(building)
 					building.fCurrentScale = building.fCurrentScale+building.fScaleInterval
 					building:SetModelScale(building.fCurrentScale)
 				else
+					building:SetModelScale(building.fMaxScale)
 					building.bScale=false
 				end
 			end
@@ -511,7 +569,6 @@ function BuildingHelper:AddBuilding(building)
 		else
 			return nil
 		end
-		
 	    return BUILDINGHELPER_THINK
     end})
 	
@@ -532,7 +589,6 @@ function BuildingHelper:AddBuilding(building)
 			else
 				return nil
 			end
-			
 		    return .25
 	    end})
 	end
@@ -540,28 +596,25 @@ end
 
 ------------------------ UTILITY FUNCTIONS --------------------------------------------
 
--- use this to give building helper your map's Z. just feed any unit into this. it's just used for
--- debug draw functions.
-function BuildingHelper:SetZ(unit)
-	BH_Z = unit:GetAbsOrigin().z+5
-end
-
-function makeVectorString(v)
-	--print(tostring(v))
-	local s = tostring(v.x .. "," .. v.y)
-	return s
+function VectorString(v)
+  return 'x: ' .. v.x .. ' y: ' .. v.y .. ' z: ' .. v.z
 end
 
 function BuildingHelper:IsRectangularAreaBlocked(boundingRect)
 	for x=boundingRect.leftBorderX+32,boundingRect.rightBorderX-32,64 do
 		for y=boundingRect.topBorderY-32,boundingRect.bottomBorderY+32,-64 do
-			local vect = Vector(x,y,BH_Z)
-			if GRIDNAV_SQUARES[makeVectorString(vect)] or BUILDING_SQUARES[makeVectorString(vect)] then
+			local vect = Vector(x,y,0)
+			if GRIDNAV_SQUARES[VectorString(vect)] or BUILDING_SQUARES[VectorString(vect)] then
 				return true
 			end
 		end
 	end
 	return false
+end
+
+function IsSquareBlocked( sqCenter )
+	sqCenter = Vector(sqCenter.x, sqCenter.y, 0)
+	return GRIDNAV_SQUARES[VectorString(sqCenter)] or BUILDING_SQUARES[VectorString(sqCenter)]
 end
 
 function snapToGrid64(coord)
@@ -572,55 +625,18 @@ function snapToGrid32(coord)
 	return 32+64*math.floor(coord/64)
 end
 
-
-function tableContains(list, element)
-  if list == nil then return false end
-  for i=1,#list do
-    if list[i] == element then
-      return true
-    end
-  end
-  return false
-end
-
 function makeBoundingRect(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
 	return {leftBorderX = leftBorderX, rightBorderX = rightBorderX, topBorderY = topBorderY, bottomBorderY = bottomBorderY}
 end
 
 -- Use BuildingHelper:GetZ before using these print funcs.
 function BuildingHelper:PrintSquareFromCenterPoint(v)
-			DebugDrawLine(Vector(v.x-32,v.y+32,BH_Z), Vector(v.x+32,v.y+32,BH_Z), 255, 0, 0, false, 30)
-			DebugDrawLine(Vector(v.x-32,v.y+32,BH_Z), Vector(v.x-32,v.y-32,BH_Z), 255, 0, 0, false, 30)
-			DebugDrawLine(Vector(v.x-32,v.y-32,BH_Z), Vector(v.x+32,v.y-32,BH_Z), 255, 0, 0, false, 30)
-			DebugDrawLine(Vector(v.x+32,v.y-32,BH_Z), Vector(v.x+32,v.y+32,BH_Z), 255, 0, 0, false, 30)
+	local z = GetGroundPosition(v, nil).z
+	DebugDrawBox(v, Vector(-32,-32,0), Vector(32,32,1), 255, 0, 0, 255, 30)
 end
+
 function BuildingHelper:PrintSquareFromCenterPointShort(v)
-			DebugDrawLine(Vector(v.x-32,v.y+32,BH_Z), Vector(v.x+32,v.y+32,BH_Z), 255, 0, 0, false, .1)
-			DebugDrawLine(Vector(v.x-32,v.y+32,BH_Z), Vector(v.x-32,v.y-32,BH_Z), 255, 0, 0, false, .1)
-			DebugDrawLine(Vector(v.x-32,v.y-32,BH_Z), Vector(v.x+32,v.y-32,BH_Z), 255, 0, 0, false, .1)
-			DebugDrawLine(Vector(v.x+32,v.y-32,BH_Z), Vector(v.x+32,v.y+32,BH_Z), 255, 0, 0, false, .1)
+	DebugDrawBox(v, Vector(-32,-32,0), Vector(32,32,1), 255, 0, 0, 255, .1)
 end
 
 --Put this line in InitGameMode to use this function: Convars:RegisterCommand( "buildings", Dynamic_Wrap(YourGameMode, 'DisplayBuildingGrids'), "blah", 0 )
-
---[[function GameMode:DisplayBuildingGrids()
-  print( '******* Displaying Building Grids ***************' )
-  local cmdPlayer = Convars:GetCommandClient()
-  if cmdPlayer then
-    local playerID = cmdPlayer:GetPlayerID()
-    if playerID ~= nil and playerID ~= -1 then
-      -- Do something here for the player who called this command
-		for vectString,b in pairs(BUILDING_SQUARES) do
-			if b then
-				local i = vectString:find(",")
-				local x = tonumber(vectString:sub(1,i-1))
-				local y = tonumber(vectString:sub(i+1))
-				print("x: " .. x .. "y: " .. y)
-				--PrintVector(square)
-				BuildingHelper:PrintSquareFromCenterPoint(Vector(x,y,BH_Z))
-			end
-		end
-    end
-  end
-  print( '*********************************************' )
-end]]
