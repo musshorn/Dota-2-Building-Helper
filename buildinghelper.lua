@@ -51,8 +51,8 @@ function BuildingHelper:Init(  )
 			end
 		end
 	end
-	print("BuildingGhostAbilities: ")
-	PrintTable(BuildingGhostAbilities)
+	--print("BuildingGhostAbilities: ")
+	--PrintTable(BuildingGhostAbilities)
 end
 
 -- nMapLength is 16384 if you're using the tile editor.
