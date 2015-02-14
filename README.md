@@ -39,7 +39,7 @@ See [addon_game_mode.lua](https://github.com/Myll/Dota-2-Building-Helper/blob/ma
 
 ## Usage
 
-Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength), where nHalfMapLength is half the length of one side of your map. So you would get this value by scrolling really really close on a corner of your map in Hammer, and then taking the abs value of one the coordinates. For example, if you're using the Tile Editor and haven't changed the map size, the value will be 8192.
+Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength)`, where nHalfMapLength is half the length of one side of your map. So you would get this value by scrolling really really close on a corner of your map in Hammer, and then taking the abs value of one the coordinates. For example, if you're using the Tile Editor and haven't changed the map size, the value will be 8192.
 
 Using BH is really easy compared to previous versions. The new BH is very KV-oriented. For example, the following ability would be parsed as a BH building:
 ```
