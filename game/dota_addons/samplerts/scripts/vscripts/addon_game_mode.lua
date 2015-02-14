@@ -10,6 +10,34 @@ BASE_MODULES = {
 	'samplerts',
 }
 
+--MODULE LOADER STUFF
+BASE_LOG_PREFIX = '[SRTS]'
+
+LOG_FILE = "log/SampleRTS.txt"
+
+InitLogFile(LOG_FILE, "[[ SampleRTS ]]")
+
+function log(msg)
+	print(BASE_LOG_PREFIX .. msg)
+	AppendToLogFile(LOG_FILE, msg .. '\n')
+end
+
+function err(msg)
+	display('[X] '..msg, COLOR_RED)
+end
+
+function warning(msg)
+	display('[W] '..msg, COLOR_DYELLOW)
+end
+
+function display(text, color)
+	color = color or COLOR_LGREEN
+
+	log('> '..text)
+
+	Say(nil, color..text, false)
+end
+
 local function load_module(mod_name)
 	-- load the module in a monitored environment
 	local status, err_msg = pcall(function()
@@ -22,6 +50,7 @@ local function load_module(mod_name)
 		err(' module ' .. mod_name .. ' FAILED: '..err_msg)
 	end
 end
+--END OF MODULE LOADER STUFF
 
 -- Load all modules
 for i, mod_name in pairs(BASE_MODULES) do
