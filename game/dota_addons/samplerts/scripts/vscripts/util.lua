@@ -1,7 +1,7 @@
 -- GREAT UTILITY FUNCTIONS
 
 -- Returns a shallow copy of the passed table.
-function shallowcopy(orig)
+--[[function shallowcopy(orig)
     local orig_type = type(orig)
     local copy
     if orig_type == 'table' then
@@ -13,7 +13,7 @@ function shallowcopy(orig)
         copy = orig
     end
     return copy
-end
+end]]
 
 -- Remove all abilities on a unit.
 function ClearAbilities( unit )
@@ -195,35 +195,6 @@ end
 function VectorString(v)
   return 'x: ' .. v.x .. ' y: ' .. v.y .. ' z: ' .. v.z
 end
-
---MODULE LOADER STUFF
-BASE_LOG_PREFIX = '[SRTS]'
-
-LOG_FILE = "log/SampleRTS.txt"
-
-InitLogFile(LOG_FILE, "[[ SampleRTS ]]")
-
-function log(msg)
-	print(BASE_LOG_PREFIX .. msg)
-	AppendToLogFile(LOG_FILE, msg .. '\n')
-end
-
-function err(msg)
-	display('[X] '..msg, COLOR_RED)
-end
-
-function warning(msg)
-	display('[W] '..msg, COLOR_DYELLOW)
-end
-
-function display(text, color)
-	color = color or COLOR_LGREEN
-
-	log('> '..text)
-
-	Say(nil, color..text, false)
-end
---END OF MODULE LOADER STUFF
 
 function PrintTable(t, indent, done)
 	--print ( string.format ('PrintTable type %s', type(keys)) )
