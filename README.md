@@ -8,8 +8,6 @@ I'm pleased to announce that BuildingHelper has been completely revamped. It now
 
 Since BuildingHelper (BH) now has various components in many different locations, I thought the best way to convey the installation information would be to make this repo contain a sample RTS-style addon. You can literally just merge these game and content folders into your `dota 2 beta/dota_ugc` folder, compile the map in Hammer, and you can see BH in action. I will of course still explain essential installation info in this section.
 
-**Note:** BuildingHelper is only compatible with square-shaped maps that are centered at x=0,y=0.
-
 **Add these files to your own addon:**
 * `game/dota_addons/samplerts/scripts/vscripts/buildinghelper.lua`
 * `game/dota_addons/samplerts/scripts/vscripts/FlashUtil.lua`
@@ -40,7 +38,11 @@ See [addon_game_mode.lua](https://github.com/Myll/Dota-2-Building-Helper/blob/ma
 
 ## Usage
 
-Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength)`, where nHalfMapLength is half the length of one side of your map. So you would get this value by scrolling really really close on a corner of your map in Hammer, and then taking the abs value of one the coordinates. For example, if you're using the Tile Editor and haven't changed the map size, the value will be 8192.
+Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength)`. In SampleRTS, it's called [here](https://github.com/Myll/Dota-2-Building-Helper/blob/myll/game/dota_addons/samplerts/scripts/vscripts/samplerts.lua#L624). This picture explains how to get nHalfMapLength:
+
+![](http://i.imgur.com/FpbxQAs.png)
+
+For maps using the tile editor, nHalfMapLength=8192 is good.
 
 Using BH is really easy compared to previous versions. The new BH is very KV-oriented. For example, the following ability would be parsed as a BH building:
 ```
