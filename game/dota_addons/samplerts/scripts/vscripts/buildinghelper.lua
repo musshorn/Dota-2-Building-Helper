@@ -329,7 +329,7 @@ function BuildingHelper:AddBuilding(keys)
 								local groundZ = GetGroundPosition(Vector(x,y,z),caster).z
 								--table.insert(squares, Vector(x,y,z))
 								--print(VectorString(Vector(x,y,z)))
-								local id = ParticleManager:CreateParticleForPlayer("particles/square_sprite.vpcf", PATTACH_ABSORIGIN, caster, player)
+								local id = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/square_sprite.vpcf", PATTACH_ABSORIGIN, caster, player)
 								ParticleManager:SetParticleControl(id, 0, Vector(x,y,groundZ))
 								ParticleManager:SetParticleControl(id, 1, Vector(32,0,0))
 								ParticleManager:SetParticleControl(id, 3, Vector(60,0,0))
@@ -345,7 +345,7 @@ function BuildingHelper:AddBuilding(keys)
 						end
 						--<BMD> position is 0, model attach is 1, color is CP2, and alpha is CP3.x
 						--ParticleManager:SetParticleControlEnt(particle, 1, unit, 1, "follow_origin", unit:GetAbsOrigin(), true)
-						local modelParticle = ParticleManager:CreateParticleForPlayer("particles/ghost_model.vpcf", PATTACH_ABSORIGIN, player.modelGhostDummy, player)
+						local modelParticle = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/ghost_model.vpcf", PATTACH_ABSORIGIN, player.modelGhostDummy, player)
 						ParticleManager:SetParticleControlEnt(modelParticle, 1, player.modelGhostDummy, 1, "follow_origin", player.modelGhostDummy:GetAbsOrigin(), true)
 						ParticleManager:SetParticleControl(modelParticle, 3, Vector(100,0,0))
 						if areaBlocked then
