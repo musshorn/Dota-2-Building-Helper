@@ -84,11 +84,11 @@ Using BH is really easy compared to previous versions. The new BH is very KV-ori
 ```
 BH handles cooldowns and gold costs nicely for you. It won't charge the player the cost until he successfully places the building, nor start the cooldown either.
 
-Regarding the `move_to_point_` abilities: You can see we have `AbilityCastRange` defined but the `AbilityBehavior` is `"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE"`. To the game logic, `AbilityCastRange` does nothing, but BH takes this value and will try to find an associated `move_to_point_` ability. So if you have a building ability with `"AbilityCastRange"  "122"`, you must have a `move_to_point_122` ability or else BH will default it to `move_to_point_100`. These are abilities are necessary for the building caster to walk a distance before being able to build the building.
+Regarding the `move_to_point_` abilities: You can see we have `AbilityCastRange` defined but the `AbilityBehavior` is `"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE"`. To the game logic, `AbilityCastRange` does nothing, but BH takes this value and will try to find an associated `move_to_point_` ability. So if you have a building ability with `"AbilityCastRange"  "122"`, you must have a `move_to_point_122` ability or else BH will default it to `move_to_point_100`. These abilities are necessary for the building caster to walk a distance before being able to build the building.
 
 One more important thing: By default, BH will cancel a building ghost if it detects the caster used another ability during the ghost. To make BH ignore abilities (i.e. not cancel the ghost) you can add the KV `"CancelsBuildingGhost"	"0"` to any ability or item. In this repo, the ability `example_ability` has this KV and thus will not cancel building ghost when it's executed.
 
-In abilities.lua, we have the build function defined. It'll look simply like this:
+Now onto the lua component of the front-end: In abilities.lua, we have the build function defined. It'll look simply like this:
 ```
 function build( keys )
 	BuildingHelper:AddBuilding(keys)
