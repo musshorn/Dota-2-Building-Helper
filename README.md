@@ -2,6 +2,8 @@
 
 I'm pleased to announce that BuildingHelper has been completely revamped. It now includes RTS-style building ghost, and the library is overall more customizeable and simpler.
 
+[Gfy Demo](http://gfycat.com/SpecificSkeletalCowbird)
+
 ## Installation
 
 Since BuildingHelper (BH) now has various components in many different locations, I thought the best way to convey the installation information would be to make this repo contain a sample RTS-style addon. You can literally just merge these game and content folders into your `dota 2 beta/dota_ugc` folder, compile the map in Hammer, and you can see BH in action. I will of course still explain essential installation info in this section.
