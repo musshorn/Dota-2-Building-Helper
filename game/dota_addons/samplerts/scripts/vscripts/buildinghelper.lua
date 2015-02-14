@@ -37,7 +37,7 @@ BuildingHelperKVs =
 }
 
 function BuildingHelper:Init(nHalfMapLength) -- nHalfMapLength is 8192 if you're using the tile editor.
-	nMapLength = nHalfMapLength*2
+	local nMapLength = nHalfMapLength*2
 
 	Convars:RegisterCommand( "BuildingPosChosen", function()
 		--get the player that sent the command
@@ -282,7 +282,7 @@ function BuildingHelper:AddBuilding(keys)
 					FlashUtil:StopDataStream( player.cursorStream )
 					player.cursorStream = nil
 					player.cancelBuilding = false
-					player.lastCursorCenter = Vector(0,0,0)
+					player.lastCursorCenter = nil
 					ClearParticleTable(player.ghost_particles)
 					return
 				end
@@ -296,7 +296,7 @@ function BuildingHelper:AddBuilding(keys)
 					FlashUtil:StopDataStream( player.cursorStream )
 					player.cursorStream = nil
 					player.buildingPosChosen = false
-					player.lastCursorCenter = Vector(0,0,0)
+					player.lastCursorCenter = nil
 					ClearParticleTable(player.ghost_particles)
 					return
 					--TODO: If buildingPosChosen is false and hero casted another ability, remove the ghost. Listen to OnAbilityUsed
@@ -320,7 +320,13 @@ function BuildingHelper:AddBuilding(keys)
 
 					-- No need to redraw the particles if the cursor is at the same location. 
 					-- (bug) it will stay green if cursor stays at the same location and a building is built at the location.
-					if vBuildingCenter ~= player.lastCursorCenter then
+					local cursorSnap = nil
+					if player.lastCursorCenter ~= nil then
+						local cursorSnapX = SnapToGrid32(player.lastCursorCenter.x)
+						local cursorSnapY = SnapToGrid32(player.lastCursorCenter.y)
+						cursorSnap = Vector(cursorSnapX, cursorSnapY, vBuildingCenter.z)
+					end
+					if cursorSnap ~= nil and vBuildingCenter ~= cursorSnap then
 						ClearParticleTable(player.ghost_particles)
 						local areaBlocked = false
 						local squares = {}
@@ -332,7 +338,7 @@ function BuildingHelper:AddBuilding(keys)
 								local id = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/square_sprite.vpcf", PATTACH_ABSORIGIN, caster, player)
 								ParticleManager:SetParticleControl(id, 0, Vector(x,y,groundZ))
 								ParticleManager:SetParticleControl(id, 1, Vector(32,0,0))
-								ParticleManager:SetParticleControl(id, 3, Vector(60,0,0))
+								ParticleManager:SetParticleControl(id, 3, Vector(70,0,0))
 								if IsSquareBlocked(Vector(x,y,z), true) then
 									ParticleManager:SetParticleControl(id, 2, Vector(255,0,0))
 									areaBlocked = true
