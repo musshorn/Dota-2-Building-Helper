@@ -33,9 +33,9 @@ require('buildinghelper.lua')
 require('abilities.lua')
 PrecacheResource("particle_folder", "particles/buildinghelper", context)
 ```
-BH requires some snippets of code in game event functions. See SampleRTS.lua and CTRL+F "BH Snippet".
+BH requires some snippets of code in game event functions. See [SampleRTS.lua](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/vscripts/samplerts.lua) and CTRL+F "BH Snippet".
 
-See [addon_game_mode.lua]() for reference. It uses a function to require files which I recommend for your addon.
+See [addon_game_mode.lua](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/vscripts/addon_game_mode.lua) for reference. It uses a function to require files which I recommend for your addon.
 
 ## Usage
 
