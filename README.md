@@ -1,108 +1,137 @@
-Dota 2 Building Helper
-======================
-Building Helper Library for Dota 2 Modding
+# Dota 2 Building Helper v2.0
 
-Author: Myll
+I'm pleased to announce that BuildingHelper has been completely revamped. It now includes RTS-style building ghost, and the library is overall more customizeable and simpler.
 
-timers.lua done by https://github.com/bmddota and https://github.com/ash47
+## Installation
 
-Demo: https://www.youtube.com/watch?v=NUuDTq3k18w
+Since BuildingHelper (BH) now has various components in many different locations, I thought the best way to convey the installation information would be to make this repo contain a sample RTS-style addon. You can literally just merge these game and content folders into your `dota 2 beta/dota_ugc` folder, compile the map in Hammer, and you can see BH in action. I will of course still explain essential installation info in this section.
 
-How to install: 
+**Note:** BuildingHelper is only compatible with square-shaped maps that are centered at x=0,y=0.
 
-1. Place buildinghelper.lua in your vscripts and say `require('buildinghelper')` in `addon_game_mode.lua`. Do the same for timers.lua if you don't already have it.
+**Add these files to your own addon:**
+* `game/dota_addons/samplerts/scripts/vscripts/buildinghelper.lua`
+* `game/dota_addons/samplerts/scripts/vscripts/FlashUtil.lua`
+* `game/dota_addons/samplerts/scripts/vscripts/abilities.lua`
+* `game/dota_addons/samplerts/resource/flash3/FlashUtil.swf`
+* `game/dota_addons/samplerts/resource/flash3/CustomError.swf`
+* `game/dota_addons/samplerts/resource/flash3/BuildingHelper.swf`
 
-2. Merge ```npc_abilties_custom.txt``` and ```npc_units_custom.txt``` with your own.
+**Merge these files with your own addon:**
+* `game/dota_addons/samplerts/scripts/custom_events.txt`
+In `game/dota_addons/samplerts/scripts/npc/npc_abilities_custom.txt`, only the abilities that start with `move_to_point_` are required. These abilities are explained more in the "Usage" section.
+* `game/dota_addons/samplerts/resource/flash3/custom_ui.txt`
 
-v0.5 Changelog (10/14/14):
+**Add these contents to addon_game_mode.lua:**
+```
+require('util.lua')
+require('timers.lua')
+require('physics.lua')
+require('FlashUtil.lua')
+require('buildinghelper.lua')
+require('abilities.lua')
+PrecacheResource("particle_folder", "particles/buildinghelper", context)
+```
+BH requires some snippets of code in game event functions. See SampleRTS.lua and CTRL+F "BH Snippet".
 
-1. Added circle-packing to buildings. See building:Pack() below.
+See [addon_game_mode.lua]() for reference. It uses a function to require files which I recommend for your addon.
 
-2. RemoveBuilding no longer requires the building size.
+## Usage
 
-3. GeneratePathingMap is no longer used by default. Building owners will always try to find clear space whenever they build a building. GeneratePathingMap was mainly for checking if building placement was blocked by units. It's inefficient atm, and most tower defense games don't need to check if units are in the way (other than the owner). You can have the old way back with BuildingHelper:UsePathingMap(true).
+Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength), where nHalfMapLength is half the length of one side of your map. So you would get this value by scrolling really really close on a corner of your map in Hammer, and then taking the abs value of one the coordinates. For example, if you're using the Tile Editor and haven't changed the map size, the value will be 8192.
 
-4. Library is overall more efficient. Timers will remove themselves when not needed.
+Using BH is really easy compared to previous versions. The new BH is very KV-oriented. For example, the following ability would be parsed as a BH building:
+```
+"build_arrow_tower"
+{
+	"AbilityBehavior"				"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE"
+	"BaseClass"						"ability_datadriven"
+	"AbilityTextureName"			"build_arrow_tower"
+	"AbilityCastAnimation"			"ACT_DOTA_DISABLED"
+	// BuildingHelper info
+	"Building"						"1" //bool
+	"BuildingSize"					"3" // this is (3x64) by (3x64) units, so 9 squares.
+	"BuildTime"						"2.0"
+	"AbilityCastRange"				"200"
+	"UpdateHealth"					"1" //bool
+	"Scale"							"1" //bool
+	"MaxScale"						"1.3"
+	"CasterCanControl"				"1" //bool. This will automatically run SetControllableByPlayer and let the caster of this ability to control the building.
+	//"CancelsBuildingGhost"			"0" //bool
+	// Note: if unit uses a npc_dota_hero baseclass, you must use the npc_dota_hero name.
+	"UnitName"						"npc_dota_hero_drow_ranger"
+	"AbilityCooldown"				"3"
+	"AbilityGoldCost"				"10"
+	// End of BuildingHelper info
 
-Most useful functions:
+	"AbilityCastPoint"				"0.0"
+	"MaxLevel"						"1"
 
-**(1) BuildingHelper:AddBuildingToGrid(vPoint, nSize, hOwnersHero)**
+	// Item Info
+	//-------------------------------------------------------------------------------------------------------------
+	"AbilityManaCost"				"0"
+	
+	"OnSpellStart"
+	{
+		"RunScript"
+		{
+			"ScriptFile"			"scripts/vscripts/abilities.lua"
+			"Function"				"build"
+		}
+	}
+}
+```
+BH handles cooldowns and gold costs nicely for you. It won't charge the player the cost until he successfully places the building, nor start the cooldown either.
 
-Adds a new building to the custom grid given the target point, the size, and the owner's hero.
+Regarding the `move_to_point_` abilities: You can see we have `AbilityCastRange` defined but the `AbilityBehavior` is `"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE"`. To the game logic, `AbilityCastRange` does nothing, but BH takes this value and will try to find an associated `move_to_point_` ability. So if you have a building ability with `"AbilityCastRange"  "122"`, you must have a `move_to_point_122` ability or else BH will default it to `move_to_point_100`. These are abilities are necessary for the building caster to walk a distance before being able to build the building.
 
-*vPoint*: The raw point where the user wants to place the building.
+One more important thing: By default, BH will cancel a building ghost if it detects the caster used another ability during the ghost. To make BH ignore abilities (i.e. not cancel the ghost) you can add the KV `"CancelsBuildingGhost"	"0"` to any ability or item. In this repo, the ability `example_ability` has this KV and thus will not cancel building ghost when it's executed.
 
-*nSize:* Length of 1 side of the building. Buildings must be square shaped. Example: nSize=2 would be 2x64 units. So, the building covers (2x64) by (2x64) units, or a total of 4 squares.
+In abilities.lua, we have the build function defined. It'll look simply like this:
+```
+function build( keys )
+	BuildingHelper:AddBuilding(keys)
+	keys:OnConstructionStarted(function(unit)
+		print("Started construction of " .. unit:GetUnitName())
+		-- Unit is the building be built.
+		-- Play construction sound
+		-- FindClearSpace for the builder
+	end)
+	keys:OnConstructionCompleted(function(unit)
+		print("Completed construction of " .. unit:GetUnitName())
+		-- Play construction complete sound.
+		-- Give building its abilities
+	end)
+	-- Have a fire effect when the building goes below 50% health.
+	-- It will turn off it building goes above 50% health again.
+	keys:EnableFireEffect("modifier_jakiro_liquid_fire_burn")
+end
+```
+This really highlights BH's new simplicity and customizability, and is pretty self explanatory. BH handles the complicated stuff in the background, and gives you an easy to use front end interface. You can see all the callbacks BH provides you with in the build function in abilities.lua.
 
-*hOwnersHero:* The hero that owns this building.
+If you need help I can be reached on irc.gamesurge.net #dota2modhelpdesk or you can [create an issue](https://github.com/Myll/Dota-2-Building-Helper/issues/new).
 
-Returns -1 if a building can't be built at the location.
+[**Known issues**](https://github.com/Myll/Dota-2-Building-Helper/issues)
 
-**(2) BuildingHelper:AddBuilding(building)**
-*building:* The unit entity representing this building.
+## Contributing
 
-Sub-functions of (2):
+Contributing to this repo is absolutely welcomed. Building Helper's goal is to make Dota 2 a more compatible platform to create RTS-style and Tower Defense mods. It will take a community effort to achieve this goal, not just me.
 
-**building:RemoveBuilding(bKill)**
-Removes this building from the custom grid.
+## Credits
 
-*bKill:* Whether to ForceKill(true) the building or not. The building will also move -200 units in the Z direction. Set to false if you want your own death effects.
+[Perry](https://github.com/perryvw): FlashUtil, which contains functions for cursor tracking. Also helped with making the building unit model into a particle.
 
-**building:UpdateHealth(fBuildTime, bScale, fMaxScale)**
-Updates this building's health over the build time.
+[BMD](https://github.com/bmddota): Helped figure out how to get mouse clicks in Flash. Made the particles in BH.
 
-*bScale:* Whether to add the scaling effect or not.
+[zedor](https://github.com/zedor/CustomError): Custom error in Flash.
 
-*fMaxScale:* The max model scale this unit should scale to. Can be anything if bScale is false.
+## Notes
 
-**building:Pack()**
-Places an invisible dummy unit on each corner of the building. Useful when you want units to path around buildings rectangularly. The hull radii are adjusted accordingly. Ex:
-![](http://i.imgur.com/FeSsHLE.jpg)
+If you're a new modder I highly recommend forking a new starter addon using my [D2ModKit](https://github.com/Myll/Dota-2-ModKit) program.
 
-**building:SetFireEffect(fireEffect)**
-*fireEffect:* The modifier to add when the building's health is below 50%. The modifier will remove itself if the building's health goes over 50% again. Default is `modifier_jakiro_liquid_fire_burn`. Set to nil to disable.
+Want to donate to me? That's really nice of you. Here you go:
 
-**(3) BuildingHelper:AddUnit(unit)**
+[![alt text](http://indigoprogram.org/wp-content/uploads/2012/01/Paypal-Donate-Button.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=stephenf%2ebme%40gmail%2ecom&lc=US&item_name=Myll%27s%20Dota%202%20Modding%20Contributions&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
-Adds a unit to the check-list of the helper.
+## License
 
-Sub-functions of (3):
-
-**unit:RemoveUnit()**
-
-Removes the unit from the check-list of the helper.
-
-**unit:GeneratePathingMap()**
-
-Generates a pathing map for this unit. Primarily used to determine if a unit is interfering with building placement. Returns table full of center points of squares which the unit occupies.
-
-**BuildingHelper:AddPlayerHeroes()**
-
-Adds all player hero's to the check-list of the helper.
-
-**BuildingHelper:BlockGridNavSquares(nMapLength)**
-
-Adds the squares blocked by the GridNav to the custom grid's blocked squares. This means buildings can't be placed on squares blocked by the GridNav. Not called by default.
-
-nMapLength: The map's length on one side. If you're using the tile editor it's 16384.
-
-**BuildingHelper:AutoSetHull(bAutoSetHull)**
-Whether to automatically adjust building's hull radii when AddBuilding is called. The hull radius adjusts according to the building's size. Default is true. Will always adjust if a building is packed.
-
-**BuildingHelper:SetPacking(bPacking)**
-Whether to automatically pack buildings. Default is false.
-
-**BuildingHelper:UsePathingMap(bUsePathingMap)**
-Whether to check if units are in the way before placing buildings (other than the owner). This is inefficient atm. Default is false.
-
-**BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)**
-Closes squares in a rectangular area. Look at your map in hammer to find values for the parameters. Ex: BuildingHelper:BlockRectangularArea(-256, 64, 128, -64)
-The values must be evenly divisible by 64.
-
-**BuildingHelper:SetForceUnitsAway(bForceAway)**
-
-Whether units should be forced away when a building is built on top of them. If false, buildings can not be built on top of units. Default is false.
-
-Owners of buildings can always build buildings on top of themselves, and they are always forced away.
-
-The bottom of buildinghelper.lua has some interesting utility functions that may be useful.
+Building Helper is licensed under the GNU General Public license. If you use Building Helper in your mod, please state so in your credits.
