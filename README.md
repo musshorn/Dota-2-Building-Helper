@@ -15,6 +15,8 @@ Since BuildingHelper (BH) now has various components in many different locations
 * `game/dota_addons/samplerts/resource/flash3/FlashUtil.swf`
 * `game/dota_addons/samplerts/resource/flash3/CustomError.swf`
 * `game/dota_addons/samplerts/resource/flash3/BuildingHelper.swf`
+* `game/dota_addons/samplerts/particles/buildinghelper`
+* `content/dota_addons/samplerts/particles/buildinghelper`
 
 **Merge these files with your own addon:**
 * `game/dota_addons/samplerts/scripts/custom_events.txt`
@@ -24,7 +26,6 @@ In `game/dota_addons/samplerts/scripts/npc/npc_abilities_custom.txt`, only the a
 
 **Add these contents to addon_game_mode.lua:**
 ```
-require('util.lua')
 require('timers.lua')
 require('physics.lua')
 require('FlashUtil.lua')
