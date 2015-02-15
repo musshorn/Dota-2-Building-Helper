@@ -17,6 +17,8 @@
 * `game/dota_addons/samplerts/resource/flash3/FlashUtil.swf`
 * `game/dota_addons/samplerts/resource/flash3/CustomError.swf`
 * `game/dota_addons/samplerts/resource/flash3/BuildingHelper.swf`
+* `game/dota_addons/samplerts/particles/buildinghelper`
+* `content/dota_addons/samplerts/particles/buildinghelper`
 
 **把这些文件合并到你的addon中:**
 * `game/dota_addons/samplerts/scripts/custom_events.txt`
@@ -26,7 +28,6 @@
 
 **将这些代码加入到你的addon_game_mode.lua中:**
 ```
-require('util.lua')
 require('timers.lua')
 require('physics.lua')
 require('FlashUtil.lua')
