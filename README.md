@@ -39,7 +39,7 @@ See [addon_game_mode.lua](https://github.com/Myll/Dota-2-Building-Helper/blob/ma
 
 ## Usage
 
-Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength)`. In SampleRTS, it's called [here](https://github.com/Myll/Dota-2-Building-Helper/blob/myll/game/dota_addons/samplerts/scripts/vscripts/samplerts.lua#L624). This picture explains how to get nHalfMapLength:
+Somewhere at the start of your addon you would call `BuildingHelper:Init(nHalfMapLength)`. In SampleRTS, it's called [here](https://github.com/Myll/Dota-2-Building-Helper/blob/myll/game/dota_addons/samplerts/scripts/vscripts/samplerts.lua#L624). The parameter nHalfMapLength is optional, but recommended, as it decreases the memory usage of BH. This picture explains how to get nHalfMapLength:
 
 ![](http://i.imgur.com/FpbxQAs.png)
 

@@ -5,15 +5,20 @@ function build( keys )
 		-- Unit is the building be built.
 		-- Play construction sound
 		-- FindClearSpace for the builder
+		FindClearSpaceForUnit(keys.caster, keys.caster:GetAbsOrigin(), true)
+		-- start the building with 0 mana.
+		unit:SetMana(0)
 	end)
 	keys:OnConstructionCompleted(function(unit)
 		print("Completed construction of " .. unit:GetUnitName())
 		-- Play construction complete sound.
 		-- Give building its abilities
+		-- add the mana
+		unit:SetMana(unit:GetMaxMana())
 	end)
 
 	-- These callbacks will only fire when the state between below half health/above half health changes.
-	-- i.e. it won't fire multiple times unnecessarily.
+	-- i.e. it won't unnecessarily fire multiple times.
 	keys:OnBelowHalfHealth(function(unit)
 		print(unit:GetUnitName() .. " is below half health.")
 	end)
@@ -34,10 +39,4 @@ end
 function create_building_entity( keys )
 	BuildingHelper:InitializeBuildingEntity(keys)
 end
-
-
-
-
-
-
 

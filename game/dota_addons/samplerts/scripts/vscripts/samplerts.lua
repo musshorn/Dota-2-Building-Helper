@@ -621,7 +621,8 @@ function SampleRTS:InitSampleRTS()
 	self.bSeenWaitForPlayers = false
 
 	-- BH Snippet
-	BuildingHelper:Init(8192)
+	-- This can be called with an optional argument: nHalfMapLength (see readme)
+	BuildingHelper:Init()
 end
 
 mode = nil

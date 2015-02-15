@@ -4,10 +4,10 @@ BASE_MODULES = {
 	'timers',
 	'physics',
 	'FlashUtil',
-	'buildinghelper',
 	'lib.statcollection',
 	'abilities',
 	'samplerts',
+	'buildinghelper',
 }
 
 --MODULE LOADER STUFF
