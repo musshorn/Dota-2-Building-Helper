@@ -1,3 +1,5 @@
+Debug_Peasant = false
+
 function Gather( event )
 	local caster = event.caster
 	local target = event.target
@@ -14,7 +16,9 @@ function Gather( event )
 
 	if target_class == "ent_dota_tree" then
 		caster:MoveToTargetToAttack(target)
-		print("Moving to ", target_class)
+		if Debug_Peasant then
+			print("Moving to ", target_class)
+		end
 		caster.target_tree = target
 	end
 
@@ -29,8 +33,9 @@ function Gather( event )
 	local return_ability = caster:FindAbilityByName("return_resources")
 	return_ability:SetHidden(true)
 	ability:SetHidden(false)
-	print("Gather ON, Return OFF")
-
+	if Debug_Peasant then
+		print("Gather ON, Return OFF")
+	end
 end
 
 -- Toggles Off Gather
@@ -40,9 +45,10 @@ function ToggleOffGather( event )
 
 	if gather_ability:GetToggleState() == true then
 		gather_ability:ToggleAbility()
-		print("Toggled Off Gather")
+		if Debug_Peasant then
+			print("Toggled Off Gather")
+		end
 	end
-
 end
 
 -- Toggles Off Return because of an order (e.g. Stop)
@@ -52,10 +58,11 @@ function ToggleOffReturn( event )
 
 	if return_ability:GetToggleState() == true then 
 		return_ability:ToggleAbility()
-		print("Toggled Off Return")
+		if Debug_Peasant then
+			print("Toggled Off Return")
+		end
 	end
 	caster.skip_order = false
-
 end
 
 
@@ -78,7 +85,9 @@ function CheckTreePosition( event )
 	elseif not caster:HasModifier("modifier_chopping_wood") then
 		caster:RemoveModifierByName("modifier_gathering_lumber")
 		ability:ApplyDataDrivenModifier(caster, caster, "modifier_chopping_wood", {})
-		print("Reached tree")
+		if Debug_Peasant then
+			print("Reached tree")
+		end
 	end
 end
 
@@ -91,7 +100,9 @@ function Gather1Lumber( event )
 	local return_ability = caster:FindAbilityByName("return_resources")
 
 	caster.lumber_gathered = caster.lumber_gathered + 1
-	print("Gathered "..caster.lumber_gathered)
+	if Debug_Peasant then
+		print("Gathered "..caster.lumber_gathered)
+	end
 
 	-- Show the stack of resources that the unit is carrying
 	if not caster:HasModifier("modifier_returning_resources") then
@@ -104,7 +115,9 @@ function Gather1Lumber( event )
 
 		-- Fake Toggle the Return ability
 		if return_ability:GetToggleState() == false or return_ability:IsHidden() then
-			print("Gather OFF, Return ON")
+			if Debug_Peasant then
+				print("Gather OFF, Return ON")
+			end
 			return_ability:SetHidden(false)
 			if return_ability:GetToggleState() == false then
 				return_ability:ToggleAbility()
@@ -130,13 +143,17 @@ function ReturnResources( event )
 	if caster.lumber_gathered and caster.lumber_gathered > 0 then
 		-- Find where to return the resources
 		local building = FindClosestResourceDeposit( caster )
-		print("Returning "..caster.lumber_gathered.." Lumber back to "..building:GetUnitName())
+		if Debug_Peasant then
+			print("Returning "..caster.lumber_gathered.." Lumber back to "..building:GetUnitName())
+		end
 
 		-- Set On, Wait one frame, as OnOrder gets executed before this is applied.
 		Timers:CreateTimer(0.03, function() 
 			if ability:GetToggleState() == false then
 				ability:ToggleAbility()
-				print("Return Ability Toggled On")
+				if Debug_Peasant then
+					print("Return Ability Toggled On")
+				end
 			end
 		end)
 
@@ -164,10 +181,14 @@ function CheckBuildingPosition( event )
 		local hero = caster:GetOwner()
 		local pID = hero:GetPlayerID()
 		caster:RemoveModifierByName("modifier_returning_resources")
-		print("Removed modifier_returning_resources")
+		if Debug_Peasant then
+			print("Removed modifier_returning_resources")
+		end
 
 		if caster.lumber_gathered > 0 then
-			print("Reached building, give resources")
+			if Debug_Peasant then
+				print("Reached building, give resources")
+			end
 
 			-- Green Particle Lumber Popup
 			POPUP_SYMBOL_PRE_PLUS = 0 -- This makes the + on the message particle
@@ -192,7 +213,9 @@ function CheckBuildingPosition( event )
 		-- Return Ability Off
 		if ability:ToggleAbility() == true then
 			ability:ToggleAbility()
-			print("Return Ability Toggled Off")
+			if Debug_Peasant then
+				print("Return Ability Toggled Off")
+			end
 		end
 
 		-- Gather Ability
@@ -200,11 +223,14 @@ function CheckBuildingPosition( event )
 		if gather_ability:ToggleAbility() == false then
 			-- Fake toggle On
 			gather_ability:ToggleAbility() 
-			print("Gather Ability Toggled On")
+			if Debug_Peasant then
+				print("Gather Ability Toggled On")
+			end
 		end
 		caster:CastAbilityOnTarget(caster.target_tree, gather_ability, pID)
-		print("Casting ability to target tree")
-
+		if Debug_Peasant then
+			print("Casting ability to target tree")
+		end
 	end
 end
 
@@ -219,7 +245,9 @@ function FindClosestResourceDeposit( caster )
 	local closest_building = nil
 
 	if barracks then
-		print("barrack found")
+		if Debug_Peasant then
+			print("barrack found")
+		end
 		for _,building in pairs(barracks) do
 			-- Ensure the same owner
 			if building:GetOwner() == caster:GetOwner() then

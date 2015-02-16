@@ -68,7 +68,7 @@ PrecacheResource("particle_folder", "particles/buildinghelper", context)
 	"UpdateHealth"					"1" //是否在建造的时候同时增长血量
 	"Scale"							"1" //是否在建造的时候，随着建造进程改变建筑大小
 	"MaxScale"						"1.3"//最大体积
-	"CasterCanControl"				"1" //1或者0，这个决定的是，建造者建造完成之后是否可以控制那个建筑。
+	"PlayerCanControl"				"1" //1或者0，这个决定的是，建造者建造完成之后是否可以控制那个建筑。
 	//"CancelsBuildingGhost"			"0" //不显示建造的虚像（存疑，待我看完Lua代码）
 	// 提示，下面这个UnitName，如果是一英雄，那么应该是使用英雄的基础名称
 	"UnitName"						"npc_dota_hero_drow_ranger"

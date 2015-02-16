@@ -57,15 +57,15 @@ Using BH is really easy compared to previous versions. The new BH is very KV-ori
 	"Building"						"1" //bool
 	"BuildingSize"					"3" // this is (3x64) by (3x64) units, so 9 squares.
 	"BuildTime"						"2.0"
-	"AbilityCastRange"				"200"
+	"AbilityCastRange"				"100"
 	"UpdateHealth"					"1" //bool
 	"Scale"							"1" //bool
 	"MaxScale"						"1.3"
-	"CasterCanControl"				"1" //bool. This will automatically run SetControllableByPlayer and let the caster of this ability to control the building.
+	"PlayerCanControl"				"1" //bool. Should the player issuing this build command be able to control the building once built?
 	//"CancelsBuildingGhost"			"0" //bool
 	// Note: if unit uses a npc_dota_hero baseclass, you must use the npc_dota_hero name.
 	"UnitName"						"npc_dota_hero_drow_ranger"
-	"AbilityCooldown"				"3"
+	"AbilityCooldown"				"0"
 	"AbilityGoldCost"				"10"
 	// End of BuildingHelper info
 

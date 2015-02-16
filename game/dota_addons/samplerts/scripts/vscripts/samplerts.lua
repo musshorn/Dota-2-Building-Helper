@@ -156,9 +156,11 @@ function SampleRTS:OnHeroInGame(hero)
 	hero:AddItem(item)
 
 	-- Create a builder unit
-	local peasant = CreateUnitByName("npc_peasant", hero:GetAbsOrigin()+RandomVector(300), true, hero, hero, hero:GetTeamNumber())
-	peasant:SetOwner(hero)
-	peasant:SetControllableByPlayer(hero:GetPlayerID(), true)
+	if hero.player ~= nil then
+		local peasant = CreateUnitByName("npc_peasant", hero:GetAbsOrigin()+RandomVector(300), true, hero, hero, hero:GetTeamNumber())
+		peasant:SetOwner(hero)
+		peasant:SetControllableByPlayer(hero:GetPlayerID(), true)
+	end
 end
 
 --[[

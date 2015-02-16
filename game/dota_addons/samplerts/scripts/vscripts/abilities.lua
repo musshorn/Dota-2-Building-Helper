@@ -21,7 +21,9 @@ function build( keys )
 				if not firstResource then
 					firstResource = k
 				end
-				print("P:" .. pID .. " needs " .. v .. " more " .. k .. ".")
+				if Debug_BH then
+					print("P" .. pID .. " needs " .. v .. " more " .. k .. ".")
+				end
 			end
 			local capitalLetter = firstResource:sub(1,1):upper()
 			firstResource = capitalLetter .. firstResource:sub(2)
@@ -50,11 +52,15 @@ function build( keys )
 	-- These callbacks will only fire when the state between below half health/above half health changes.
 	-- i.e. it won't unnecessarily fire multiple times.
 	keys:OnBelowHalfHealth(function(unit)
-		print(unit:GetUnitName() .. " is below half health.")
+		if Debug_BH then
+			print(unit:GetUnitName() .. " is below half health.")
+		end
 	end)
 
 	keys:OnAboveHalfHealth(function(unit)
-		print(unit:GetUnitName() .. " is above half health.")
+		if Debug_BH then
+			print(unit:GetUnitName() .. " is above half health.")
+		end
 	end)
 
 	--[[keys:OnCanceled(function()

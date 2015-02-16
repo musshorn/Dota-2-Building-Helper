@@ -17,6 +17,7 @@ UsePathingMap = false
 AUTO_SET_HULL = true
 BHGlobalDummySet = false
 PACK_ENABLED = false
+Debug_BH = true
 
 -- Circle packing math.
 BH_A = math.pow(2,.5) --multi this by rad of building
@@ -79,17 +80,17 @@ function BuildingHelper:Init(...)
 	end
 
 	local halfLength = nMapLength/2
-	local gridnavCount = 0
+	local blockedCount = 0
 	-- Check the center of each square on the map to see if it's blocked by the GridNav.
 	for x=-halfLength+32, halfLength-32, 64 do
 		for y=halfLength-32, -halfLength+32,-64 do
 			if GridNav:IsBlocked(Vector(x,y,0)) or not GridNav:IsTraversable(Vector(x,y,0)) then
 				GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
-				gridnavCount=gridnavCount+1
+				blockedCount=blockedCount+1
 			end
 		end
 	end
-	print("Total GridNav squares added: " .. gridnavCount)
+	print("Total Blocked squares added: " .. blockedCount)
 
 	--print("BuildingAbilities: ")
 	--PrintTable(BuildingAbilities)
@@ -320,7 +321,8 @@ function BuildingHelper:AddBuilding(keys)
 	end
 	player.modelGhostDummy = CreateUnitByName(unitName, OutOfWorldVector, false, nil, nil, caster:GetTeam())
 	local mgd = player.modelGhostDummy -- alias
-	mgd:SetModelScale(fMaxScale)
+	--mgd:SetModelScale(.2) -- this won't reduce the model particle size atm...
+	mgd.isBuildingDummy = true -- store this for later use
 	-- set it underground
 	--[[Timers:CreateTimer(.03, function()
 		if IsValidEntity(mgd) and mgd:IsAlive() then
@@ -575,6 +577,7 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	-- create building entity
 	local unit = CreateUnitByName(order.unitName, order.pos, false, playersHero, nil, order.team)
 	local building = unit --alias
+	building.isBuilding = true
 	-- store reference to the buildingTable in the unit.
 	unit.buildingTable = buildingTable
 
@@ -626,8 +629,8 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	local fCurrentScale=.2*fMaxScale
 	local bScaling = false -- Keep tracking if we're currently model scaling.
 
-	local bCasterCanControl = buildingTable:GetVal("CasterCanControl", "bool")
-	if bCasterCanControl then
+	local bPlayerCanControl = buildingTable:GetVal("PlayerCanControl", "bool")
+	if bPlayerCanControl then
 		unit:SetControllableByPlayer(playersHero:GetPlayerID(), true)
 		unit:SetOwner(playersHero)
 	end

@@ -3,6 +3,7 @@
 	Date: 12.02.2015.
 	Creates an item on the buildings inventory to consume the queue.
 ]]
+Debug_Queue = false
 function EnqueueUnit( event )
 	local caster = event.caster
 	local ability = event.ability
@@ -52,7 +53,9 @@ function DequeueUnit( event )
 	local train_ability = caster:FindAbilityByName(train_ability_name)
 	local gold_cost = train_ability:GetGoldCost( train_ability:GetLevel() - 1 )
 
-	print("Start dequeue")
+	if Debug_Queue then
+		print("Start dequeue")
+	end
 
 	for itemSlot = 0, 5, 1 do
        	local item = caster:GetItemInSlot( itemSlot )
@@ -60,26 +63,36 @@ function DequeueUnit( event )
         	local current_item = EntIndexToHScript(item:GetEntityIndex())
 
         	if current_item == item_ability then
-        		print("Q")
-        		DeepPrintTable(train_ability.queue)
+        		if Debug_Queue then
+	        		print("Q")
+	        		DeepPrintTable(train_ability.queue)
+        		end
         		local queue_element = getIndex(train_ability.queue, item:GetEntityIndex())
-        		print(item:GetEntityIndex().." in queue at "..queue_element)
+        		if Debug_Queue then
+        			print(item:GetEntityIndex().." in queue at "..queue_element)
+        		end
 	            table.remove(train_ability.queue, queue_element)
 
 	            caster:RemoveItem(item)
 	            
 	            -- Refund ability cost
 	            PlayerResource:ModifyGold(player, gold_cost, false, 0)
-				print("Refund ",gold_cost)
+	            if Debug_Queue then
+					print("Refund ",gold_cost)
+				end
 
 				-- Set not channeling if the cancelled item was the first **current** slot
 				if itemSlot == 1 then
 					train_ability:SetChanneling(false)
 					train_ability:EndChannel(true)
-					print("Cancel current channel")
+					if Debug_Queue then
+						print("Cancel current channel")
+					end
 					ReorderItems(caster,train_ability.queue)
 				else
-					print("Removed unit in queue slot",itemSlot)					
+					if Debug_Queue then
+						print("Removed unit in queue slot",itemSlot)	
+					end				
 				end
 				break
 			end
@@ -93,11 +106,15 @@ function ReorderItems( caster, queue )
 	for itemSlot = 1, 5, 1 do
 		local item = caster:GetItemInSlot( itemSlot )
        	if item ~= nil then
-       		print("========>REMOVING",item:GetEntityIndex())   		
+       		if Debug_Queue then
+       			print("========>REMOVING",item:GetEntityIndex())   		
+       		end
     		local new_item = CreateItem(item:GetName(), caster, caster)
        		caster:RemoveItem(item)
 			table.insert(queue, new_item:GetEntityIndex())
-			print("========>ADDED",new_item:GetEntityIndex())   		
+			if Debug_Queue then
+				print("========>ADDED",new_item:GetEntityIndex())   	
+			end	
        		caster:AddItem(new_item)
        	end
     end
@@ -127,11 +144,15 @@ function NextQueue( event )
 
         		local train_ability = caster:FindAbilityByName(train_ability_name)
 
-        		print("Q")
-        		DeepPrintTable(train_ability.queue)
+        		if Debug_Queue then
+	        		print("Q")
+	        		DeepPrintTable(train_ability.queue)
+        		end
         		local queue_element = getIndex(train_ability.queue, item:GetEntityIndex())
         		if IsValidEntity(item) then
-	        		print(item:GetEntityIndex().." in queue at "..queue_element)
+        			if Debug_Queue then
+	        			print(item:GetEntityIndex().." in queue at "..queue_element)
+	        		end
 		            table.remove(train_ability.queue, queue_element)
 	            	caster:RemoveItem(item)
 	            end
@@ -170,20 +191,27 @@ function AdvanceQueue( event )
 					local ability_to_channel = caster:FindAbilityByName(train_ability_name)
 
 					ability_to_channel:SetChanneling(true)
-					print(ability_to_channel:GetAbilityName()," started channel")
-
+					if Debug_Queue then
+						print(ability_to_channel:GetAbilityName()," started channel")
+					end
 					-- After the channeling time, check if it was cancelled or spawn it
 					-- EndChannel(false) runs whatever is in the OnChannelSucceded of the function
 					Timers:CreateTimer(ability_to_channel:GetChannelTime(), 
 					function()
-						print("===Queue Table====")
-						DeepPrintTable(ability_to_channel.queue)
+						if Debug_Queue then
+							print("===Queue Table====")
+							DeepPrintTable(ability_to_channel.queue)
+						end
 						if IsValidEntity(item) then
 							ability_to_channel:EndChannel(false)
 							ReorderItems(caster, ability_to_channel.queue)
-							print("Unit finished building")
+							if Debug_Queue then
+								print("Unit finished building")
+							end
 						else
-							print("This unit was interrupted")
+							if Debug_Queue then
+								print("This unit was interrupted")
+							end
 						end
 					end)
 				end
@@ -219,7 +247,9 @@ function getUnitIndex(list, unitName)
     if list == nil then return false end
     for k,v in pairs(list) do
         for key,value in pairs(list[k]) do
-            print(key,value)
+        	if Debug_Queue then
+          	  print(key,value)
+          	end
             if value == unitName then 
                 return key
             end

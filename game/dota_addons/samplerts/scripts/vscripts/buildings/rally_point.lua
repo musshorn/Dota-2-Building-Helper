@@ -3,10 +3,13 @@
 	Date: 11.02.2015.
 	Creates a rally point flag for this unit, removing the old one if there was one
 ]]
+Debug_Rally = false
 function SetRallyPoint( event )
 	local caster = event.caster
 	local origin = caster:GetOrigin()
-	print(origin)
+	if Debug_Rally then
+		print(origin)
+	end
 	
 	-- Need to wait one frame for the building to be properly positioned
 	Timers:CreateTimer(0.03, function()
@@ -51,8 +54,9 @@ function SetRallyPoint( event )
 		caster.flag:SetForwardVector(forwardVec)
 
 		DebugDrawLine(caster:GetAbsOrigin(), point, 255, 255, 255, false, 10)
-
-		print(caster:GetUnitName().." sets rally point on ",point)
+		if Debug_Rally then
+			print(caster:GetUnitName().." sets rally point on ",point)
+		end
 	end)
 end
 
@@ -64,7 +68,9 @@ function MoveToRallyPoint( event )
 	if caster.flag then
 		local position = caster.flag:GetAbsOrigin()
 		Timers:CreateTimer(0.05, function() target:MoveToPosition(position) end)
-		print(target:GetUnitName().." moving to position",position)
+		if Debug_Rally then
+			print(target:GetUnitName().." moving to position",position)
+		end
 	end
 end
 
@@ -76,7 +82,9 @@ function GetInitialRallyPoint( event )
 	if initial_spawn_position then
 		table.insert(result,initial_spawn_position)
 	else
-		print("Fail, no initial rally point, this shouldn't happen")
+		if Debug_Rally then
+			print("Fail, no initial rally point, this shouldn't happen")
+		end
 	end
 
 	return result
