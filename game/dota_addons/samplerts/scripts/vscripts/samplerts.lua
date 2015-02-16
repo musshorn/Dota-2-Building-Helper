@@ -154,6 +154,11 @@ function SampleRTS:OnHeroInGame(hero)
 	-- These lines will create an item and add it to the player, effectively ensuring they start with the item
 	local item = CreateItem("item_example_item", hero, hero)
 	hero:AddItem(item)
+
+	-- Create a builder unit
+	local peasant = CreateUnitByName("npc_peasant", hero:GetAbsOrigin()+RandomVector(300), true, hero, hero, hero:GetTeamNumber())
+	peasant:SetOwner(hero)
+	peasant:SetControllableByPlayer(hero:GetPlayerID(), true)
 end
 
 --[[

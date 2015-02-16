@@ -98,6 +98,10 @@ function Precache( context )
 	PrecacheUnitByNameSync("npc_dota_hero_drow_ranger", context)
 	PrecacheUnitByNameSync("npc_dota_hero_tinker", context)
 	PrecacheUnitByNameSync("npc_dota_hero_jakiro", context)
+
+	PrecacheUnitByNameSync("npc_barracks", context) -- Building that spawns units
+	PrecacheUnitByNameSync("npc_peasant", context) -- Unit that builds and gathers resources
+	PrecacheItemByNameSync("item_rally", context) -- Flag, should be a clientside particle instead
 end
 
 -- Create the game mode when we activate

@@ -185,6 +185,378 @@
 		"AttackDesire"				"1.5"		// How much bots want to attack them vs other non-hero things
 	}
 
+	//=================================================================================
+	// Creature: Peasant
+	// Basic worker unit. Can harvest lumber and build structures
+	//=================================================================================
+	"npc_peasant"
+	{
+		// General
+		//----------------------------------------------------------------
+		"BaseClass"					"npc_dota_creature"
+		"Model"						"models/creeps/lane_creeps/creep_good_ranged/creep_good_ranged.vmdl"
+		"ModelScale"				"0.8"
+		"Level"						"1"
+		"HealthBarOffset"			"140"
+		
+		// Abilities
+		//----------------------------------------------------------------
+		"AbilityLayout"				"4"
+		"Ability1"					"gather_lumber"
+		"Ability2"					"return_resources"
+		"Ability3"					"build_barracks"
+		
+		// Armor
+		//----------------------------------------------------------------
+		"ArmorPhysical"				"0"
+		"MagicalResistance"			"0"
+		
+		// Attack
+		//----------------------------------------------------------------
+		"AttackCapabilities"		"DOTA_UNIT_CAP_MELEE_ATTACK"
+		"AttackDamageMin"			"5.0"
+		"AttackDamageMax"			"6.0"
+		"AttackDamageType"			"DAMAGE_TYPE_ArmorPhysical"
+		"AttackRate"				"2"
+		"AttackAnimationPoint"		"0.433"
+		"AttackAcquisitionRange"	"500"
+		"AttackRange"				"90"
+		
+		// Bounty
+		//----------------------------------------------------------------
+		"BountyGoldMin"				"20.0"
+		"BountyGoldMax"				"30.0"
+		
+		// Bounds
+		//----------------------------------------------------------------
+		"BoundsHullName"			"DOTA_HULL_SIZE_SMALL"
+		"RingRadius"				"40"
+		"CollisionSize"				"16"
+		"FormationRank"				"4"
+		
+		// Building Cost Stats
+		//----------------------------------------------------------------
+		"GoldCost"					"75"
+		"LumberCost"				"0"
+		"FoodCost"					"1"
+		"BuildTime"					"15"
+		
+		// Movement
+		//----------------------------------------------------------------
+		"MovementCapabilities"		"DOTA_UNIT_CAP_MOVE_GROUND"
+		"MovementSpeed"				"190"
+		"MovementTurnRate"			"0.6"
+		
+		// Status
+		//----------------------------------------------------------------
+		"StatusHealth"				"220"
+		"StatusHealthRegen"			"0.25"
+		"StatusMana"				"0"
+		"StatusManaRegen"			"0"
+		
+		// Vision
+		//----------------------------------------------------------------
+		"VisionDaytimeRange"		"800"
+		"VisionNighttimeRange"		"600"
+		
+		// Team
+		//----------------------------------------------------------------
+		"TeamName"					"DOTA_TEAM_NEUTRALS"
+		"CombatClassAttack"			"DOTA_COMBAT_CLASS_ATTACK_BASIC"
+		"CombatClassDefend"			"DOTA_COMBAT_CLASS_DEFEND_BASIC"
+		"UnitRelationShipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
+		
+		// Creature Data
+		//----------------------------------------------------------------
+		"Creature"
+		{
+			"DisableClumpingBehavior"	"1"
+		}
+	}
+
+	//=================================================================================
+	// Creature: Footman
+	//=================================================================================
+	"npc_footman"
+	{
+		// General
+		//----------------------------------------------------------------
+		"BaseClass"					"npc_dota_creature"
+		"Model"						"models/heroes/dragon_knight/dragon_knight.vmdl"
+		"ModelScale"				"0.8"
+		"Level"						"2"
+		"HealthBarOffset"			"140"
+		
+		// Abilities
+		//----------------------------------------------------------------
+		"Ability1"					""
+		
+		// Armor
+		//----------------------------------------------------------------
+		"ArmorPhysical"				"2"
+		"MagicalResistance"			"0"
+		
+		// Attack
+		//----------------------------------------------------------------
+		"AttackCapabilities"		"DOTA_UNIT_CAP_MELEE_ATTACK"
+		"AttackDamageType"			"DAMAGE_TYPE_ArmorPhysical"
+		"AttackDamageMin"			"12.0"
+		"AttackDamageMax"			"13.0"
+		"AttackRate"				"1.35"
+		"AttackAnimationPoint"		"0.5"
+		"AttackAcquisitionRange"	"500"
+		"AttackRange"				"90"
+		
+		// Bounty
+		//----------------------------------------------------------------
+		"BountyGoldMin"				"26.0"
+		"BountyGoldMax"				"38.0"
+		
+		// Bounds
+		//----------------------------------------------------------------
+		"BoundsHullName"			"DOTA_HULL_SIZE_HERO"
+		"RingRadius"				"70"
+		"CollisionSize"				"31"
+		"FormationRank"				"0"
+		
+		// Building Cost Stats
+		//----------------------------------------------------------------
+		"GoldCost"					"135"
+		"LumberCost"				"0"
+		"FoodCost"					"2"
+		"BuildTime"					"20"
+		
+		// Movement
+		//----------------------------------------------------------------
+		"MovementCapabilities"		"DOTA_UNIT_CAP_MOVE_GROUND"
+		"MovementSpeed"				"270"
+		"MovementTurnRate"			"0.6"
+		
+		// Status
+		//----------------------------------------------------------------
+		"StatusHealth"				"420"
+		"StatusHealthRegen"			"0.25"
+		"StatusMana"				"0"
+		"StatusManaRegen"			"0"
+		
+		// Vision
+		//----------------------------------------------------------------
+		"VisionDaytimeRange"		"1400"
+		"VisionNighttimeRange"		"800"
+		
+		// Team
+		//----------------------------------------------------------------
+		"TeamName"					"DOTA_TEAM_NEUTRALS"
+		"CombatClassAttack"			"DOTA_COMBAT_CLASS_ATTACK_BASIC"
+		"CombatClassDefend"			"DOTA_COMBAT_CLASS_DEFEND_STRONG"
+		"UnitRelationShipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
+		
+		// Creature Data
+		//----------------------------------------------------------------
+		"Creature"
+		{
+			"DisableClumpingBehavior"	"1"
+			"AttachWearables"
+			{
+				"Wearable1"		{	"ItemDef"		"6789"		} //"Shield of Ascension"
+				"Wearable2"		{	"ItemDef"		"6791"		} //"Pauldrons of Ascension"
+				"Wearable3" 	{	"ItemDef"		"6790"		} //"Gauntlets of Ascension"
+				"Wearable4"		{	"ItemDef"		"6788"		} //"Drapes of Ascension"
+				"Wearable5"		{	"ItemDef"		"6787"		} //"Sword of Ascension"
+				"Wearable6"		{	"ItemDef"		"6792"		} //"Helm of Ascension"
+			}
+		}
+	}
+
+	//=================================================================================
+	// Creature: Knight
+	//=================================================================================
+	"npc_knight"
+	{
+		// General
+		//----------------------------------------------------------------
+		"BaseClass"					"npc_dota_creature"
+		"Model"						"models/heroes/chaos_knight/chaos_knight.vmdl"
+		"ModelScale"				"0.7"
+		"Level"						"4"
+		"HealthBarOffset"			"180"
+		
+		// Abilities
+		//----------------------------------------------------------------
+		"Ability1"					""
+		
+		// Armor
+		//----------------------------------------------------------------
+		"ArmorPhysical"				"5"
+		"MagicalResistance"			"0"
+		
+		// Attack
+		//----------------------------------------------------------------
+		"AttackCapabilities"		"DOTA_UNIT_CAP_MELEE_ATTACK"
+		"AttackDamageMin"			"30.0"
+		"AttackDamageMax"			"38.0"
+		"AttackDamageType"			"DAMAGE_TYPE_ArmorPhysical"
+		"AttackRate"				"1.4"
+		"AttackAnimationPoint"		"0.66"
+		"AttackAcquisitionRange"	"500"
+		"AttackRange"				"100"
+		
+		// Bounty
+		//----------------------------------------------------------------
+		"BountyGoldMin"				"38.0"
+		"BountyGoldMax"				"54.0"
+		
+		// Bounds
+		//----------------------------------------------------------------
+		"BoundsHullName"			"DOTA_HULL_SIZE_HERO"
+		"RingRadius"				"70"
+		"CollisionSize"				"32"
+		"FormationRank"				"0"
+		
+		// Building Cost Stats
+		//----------------------------------------------------------------
+		"GoldCost"					"245"
+		"LumberCost"				"60"
+		"FoodCost"					"4"
+		"BuildTime"					"40"
+		
+		// Movement
+		//----------------------------------------------------------------
+		"MovementCapabilities"		"DOTA_UNIT_CAP_MOVE_GROUND"
+		"MovementSpeed"				"350"
+		"MovementTurnRate"			"0.5"
+		
+		// Status
+		//----------------------------------------------------------------
+		"StatusHealth"				"835"
+		"StatusHealthRegen"			"0.25"
+		"StatusMana"				"0"
+		"StatusManaRegen"			"0"
+		
+		// Vision
+		//----------------------------------------------------------------
+		"VisionDaytimeRange"		"1400"
+		"VisionNighttimeRange"		"800"
+		
+		// Team
+		//----------------------------------------------------------------
+		"TeamName"					"DOTA_TEAM_NEUTRALS"
+		"CombatClassAttack"			"DOTA_COMBAT_CLASS_ATTACK_BASIC"
+		"CombatClassDefend"			"DOTA_COMBAT_CLASS_DEFEND_STRONG"
+		"UnitRelationShipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_DEFAULT"
+		
+		// Creature Data
+		//----------------------------------------------------------------
+		"Creature"
+		{
+			"DisableClumpingBehavior"	"1"
+			//"AttachWearables"
+			//{
+			//	"Wearable1"		{	"ItemDef"		"5810"		} //"Blades of Voth Domosh"
+			//	"Wearable2"		{	"ItemDef"		"5886"		} //"Stonehall Royal Guard Banners"
+			//	"Wearable3" 	{	"ItemDef"		"5887"		} //"Stonehall Royal Guard Helmet"
+			//	"Wearable4"		{	"ItemDef"		"5885"		} //"Stonehall Royal Guard Arms"
+			//	"Wearable5"		{	"ItemDef"		"6192"		} //"Pauldrons of the Equine Emissary"
+			//}
+			"AttachWearables"	
+			{
+				"Wearable1"		{	"ItemDef"	"5828"	} // "Atramentos the Apocalyptic"
+				"Wearable2"		{	"ItemDef"	"6266"	} // "Pauldrons of the Chaos Hound"
+				"Wearable3"		{	"ItemDef"	"5173"	} // "Entropic Helmet"
+				"Wearable4"		{	"ItemDef"	"5925"	} // "Shield of Screaming Souls"
+				"Wearable5"		{	"ItemDef"	"5233"	} // "Blade of Endless Havoc"
+			}
+		}
+
+		"precache"
+		{
+			"particle_folder"	"particles/units/heroes/hero_chaos_knight"
+		}
+	}
+
+	//=================================================================================
+	// Building: Barracks
+	// Primary troop production building. Trains Footmen and Knights
+	//=================================================================================
+	"npc_barracks"
+	{
+		// General
+		//----------------------------------------------------------------
+		"BaseClass"					"npc_dota_building"
+		"Model"						"models/props_structures/good_barracks_melee001.vmdl"
+		"ModelScale"				"1"
+		"Level"						"1"
+		"HealthBarOffset"			"140"
+		"HasInventory"				"1"
+		
+		// Abilities
+		//----------------------------------------------------------------
+		"AbilityLayout"				"4"
+		"Ability1"					"building_queue" // Core of the unit building system
+		"Ability2"					"train_footman"
+		"Ability3"					"train_knight"
+		"Ability4"					""
+		"Ability5"					""
+		"Ability6"					""
+		
+		// Armor
+		//----------------------------------------------------------------
+		"ArmorPhysical"				"5"
+		"MagicalResistance"			"0"
+		
+		// Attack
+		//----------------------------------------------------------------
+		"AttackCapabilities"		"DOTA_UNIT_CAP_NO_ATTACK"
+		"AttackDamageType"			"DAMAGE_TYPE_ArmorPhysical"
+		"AttackDamageMin"			"0"
+		"AttackDamageMax"			"0"
+		
+		// Bounty
+		//----------------------------------------------------------------
+		"BountyGoldMin"				"0.0"
+		"BountyGoldMax"				"0.0"
+		
+		// Bounds
+		//----------------------------------------------------------------
+		"BoundsHullName"			"DOTA_HULL_SIZE_BARRACKS"
+		"RingRadius"				"220"
+		"CollisionSize"				"144"
+		
+		// Building Cost Stats
+		//----------------------------------------------------------------
+		"GoldCost"					"180"
+		"LumberCost"				"50"
+		"BuildTime"					"60"
+		
+		// Movement
+		//----------------------------------------------------------------
+		"MovementCapabilities"		"DOTA_UNIT_CAP_MOVE_GROUND"	// Needed to cast Point abilities
+		"MovementSpeed"				"0"
+		
+		// Status
+		//----------------------------------------------------------------
+		"StatusHealth"				"1200"
+		"StatusHealthRegen"			"0"
+		"StatusMana"				"0"
+		"StatusManaRegen"			"0"
+		
+		// Vision
+		//----------------------------------------------------------------
+		"VisionDaytimeRange"		"900"
+		"VisionNighttimeRange"		"600"
+		
+		// Team
+		//----------------------------------------------------------------
+		"TeamName"					"DOTA_TEAM_NEUTRALS"
+		"CombatClassAttack"			"DOTA_COMBAT_CLASS_ATTACK_BASIC"
+		"CombatClassDefend"			"DOTA_COMBAT_CLASS_DEFEND_STRUCTURE"
+		"UnitRelationShipClass"		"DOTA_NPC_UNIT_RELATIONSHIP_TYPE_BUILDING"
+	}
+
+
+
+
+
   
 	//------------------------------------------------------------------------------------
 	//- This unit can be used to precache different models/particles/sounds              -
