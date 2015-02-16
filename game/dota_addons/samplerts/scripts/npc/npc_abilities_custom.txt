@@ -4,6 +4,46 @@
 {
 	"Version"		"1"
 
+	"build_dark_tower"
+	{
+		"AbilityBehavior"				"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE"
+		"BaseClass"						"ability_datadriven"
+		"AbilityTextureName"			"sniper_take_aim"
+		"AbilityCastAnimation"			"ACT_DOTA_DISABLED"
+		// BuildingHelper info
+		"Building"						"1" //bool
+		"BuildingSize"					"3" // this is (3x64) by (3x64) units, so 9 squares.
+		"BuildTime"						"2.0"
+		"AbilityCastRange"				"100"
+		"UpdateHealth"					"1" //bool
+		"Scale"							"1" //bool
+		"MaxScale"						"1.3"
+		"CasterCanControl"				"1" //bool. This will automatically run SetControllableByPlayer and let the caster of this ability to control the building.
+		//"CancelsBuildingGhost"			"0" //bool
+		// Note: if unit uses a npc_dota_hero baseclass, you must use the npc_dota_hero name.
+		"UnitName"						"npc_dota_hero_enigma"
+		"AbilityCooldown"				"0"
+		"AbilityGoldCost"				"10"	
+
+		// End of BuildingHelper info
+
+		"AbilityCastPoint"				"0.0"
+		"MaxLevel"						"1"
+
+		// Item Info
+		//-------------------------------------------------------------------------------------------------------------
+		"AbilityManaCost"				"0"
+		
+		"OnSpellStart"
+		{
+			"RunScript"
+			{
+				"ScriptFile"			"scripts/vscripts/abilities.lua"
+				"Function"				"build"
+			}
+		}
+	}
+
 	"build_arrow_tower"
 	{
 		"AbilityBehavior"				"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE"

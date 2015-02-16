@@ -1,7 +1,11 @@
 function build( keys )
 	local player = keys.caster:GetPlayerOwner()
 	local pID = player:GetPlayerID()
+	player.lumber = 20
+	player.stone = 10
 	local returnTable = BuildingHelper:AddBuilding(keys)
+	--print("Lumber: " .. player.lumber)
+	--print("Stone: " .. player.stone)
 
 	-- handle errors if any
 	if TableLength(returnTable) > 0 then

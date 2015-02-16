@@ -23,18 +23,13 @@ BH_A = math.pow(2,.5) --multi this by rad of building
 BH_cos45 = math.pow(.5,.5) -- cos(45)
 
 if not OutOfWorldVector then
-	OutOfWorldVector = Vector(0,0,0)
+	OutOfWorldVector = Vector(11000,11000,0)
 end
 
 BuildingHelper = {}
 BuildingAbilities = {}
 -- Abilities which don't cancel building ghost.
 DontCancelBuildingGhostAbils = {}
-
-BuildingHelperKVs = 
-{
-
-}
 
 function BuildingHelper:Init(...)
 	local nMapLength = 16384*2
@@ -245,6 +240,7 @@ function BuildingHelper:AddBuilding(keys)
 	end
 
 	buildingTable["abil"] = hAbility
+	buildingTable["player"] = player
 	buildingTable["playersHero"] = playersHero
 
 	local size = buildingTable:GetVal("BuildingSize", "number")
@@ -318,11 +314,26 @@ function BuildingHelper:AddBuilding(keys)
 		player.modelGhostDummy:RemoveSelf()
 	end
 
+	local fMaxScale = buildingTable:GetVal("MaxScale", "float")
+	if fMaxScale == nil then
+		fMaxScale = 1
+	end
 	player.modelGhostDummy = CreateUnitByName(unitName, OutOfWorldVector, false, nil, nil, caster:GetTeam())
+	local mgd = player.modelGhostDummy -- alias
+	mgd:SetModelScale(fMaxScale)
+	-- set it underground
+	--[[Timers:CreateTimer(.03, function()
+		if IsValidEntity(mgd) and mgd:IsAlive() then
+			local loc = mgd:GetAbsOrigin()
+			mgd:SetAbsOrigin(Vector(loc.x,loc.y,loc.z-300))
+		end
+	end)]]
+	player.lastCursorCenter = OutOfWorldVector
 
 	function player:BeginGhost()
 		if not player.cursorStream then
 			local delta = .03
+			local start = false
 			player.cursorStream = FlashUtil:RequestDataStream( "cursor_position_world", delta, pID, function(playerID, cursorPos)
 				local validPos = true
 				-- Remember, our blocked squares are defined according to the square's center.
@@ -335,7 +346,7 @@ function BuildingHelper:AddBuilding(keys)
 					FlashUtil:StopDataStream( player.cursorStream )
 					player.cursorStream = nil
 					player.cancelBuilding = false
-					player.lastCursorCenter = nil
+					player.lastCursorCenter = OutOfWorldVector
 					ClearParticleTable(player.ghost_particles)
 					return
 				end
@@ -349,7 +360,7 @@ function BuildingHelper:AddBuilding(keys)
 					FlashUtil:StopDataStream( player.cursorStream )
 					player.cursorStream = nil
 					player.buildingPosChosen = false
-					player.lastCursorCenter = nil
+					player.lastCursorCenter = OutOfWorldVector
 					ClearParticleTable(player.ghost_particles)
 					return
 				end
@@ -363,6 +374,7 @@ function BuildingHelper:AddBuilding(keys)
 						centerX=SnapToGrid32(cursorPos.x)
 						centerY=SnapToGrid32(cursorPos.y)
 					end
+
 					local vBuildingCenter = Vector(centerX,centerY,z)
 					local halfSide = (size/2)*64
 					local boundingRect = {leftBorderX = centerX-halfSide, 
@@ -558,6 +570,7 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	local keys2 = order["keys"]
 
 	local playersHero = buildingTable["playersHero"]
+	local player = buildingTable["player"]
 
 	-- create building entity
 	local unit = CreateUnitByName(order.unitName, order.pos, false, playersHero, nil, order.team)
@@ -718,6 +731,15 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 		playersHero:SetGold(playersHero:GetGold()-goldCost, false)
 	end
 	buildingTable["abil"]:StartCooldown(cooldown)
+
+	-- take out custom resources from player
+	local resources = buildingTable.resources
+	for k,v in pairs(resources) do
+		player[k] = player[k] - v
+		if player[k] < 0 then
+			player[k] = 0
+		end
+	end
 
 	if keys2.onConstructionStarted ~= nil then
 		keys2.onConstructionStarted(unit)

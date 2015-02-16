@@ -47,7 +47,7 @@ USE_CUSTOM_XP_VALUES = true             -- Should we use custom XP values to lev
 -- Set this to false before you push out Workshop versions!
 Testing = true
 -- It's useful to set up an out of world vector. Ex. a location under the ground, in a corner of the map.
-OutOfWorldVector = Vector(7000,7000,-100)
+--OutOfWorldVector = Vector(7000,7000,-100)
 
 -- Set up the GetDotaStats stats for this mod.
 if not Testing then
