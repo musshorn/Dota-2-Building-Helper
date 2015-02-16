@@ -165,7 +165,7 @@
 	"item_train_footman"
 	{
 		"BaseClass"             		"item_datadriven"
-		"AbilityTextureName"			"item_human_train_footman"
+		"AbilityTextureName"			"item_train_footman"
 		"AbilityBehavior"				"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_IGNORE_CHANNEL"
 		"AbilityCastPoint"				"0"
 
@@ -186,7 +186,7 @@
 	"item_train_knight"
 	{
 		"BaseClass"             		"item_datadriven"
-		"AbilityTextureName"			"item_human_train_knight"
+		"AbilityTextureName"			"item_train_knight"
 		"AbilityBehavior"				"DOTA_ABILITY_BEHAVIOR_NO_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_IGNORE_CHANNEL"
 		"AbilityCastPoint"				"0"
 
