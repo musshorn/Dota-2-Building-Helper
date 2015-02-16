@@ -160,6 +160,34 @@ function BuildingHelper:AutoSetHull(bAutoSetHull)
 end
 
 function BuildingHelper:AddBuilding(keys)
+
+	-- Callbacks
+	function keys:OnConstructionStarted( callback )
+		keys.onConstructionStarted = callback
+	end
+
+	function keys:OnConstructionCompleted( callback )
+		keys.onConstructionCompleted = callback
+	end
+
+	function keys:EnableFireEffect( sFireEffect )
+		keys.fireEffect = sFireEffect
+	end
+
+	function keys:OnBelowHalfHealth( callback )
+		keys.onBelowHalfHealth = callback
+	end
+
+	function keys:OnAboveHalfHealth( callback )
+		keys.onAboveHalfHealth = callback
+	end
+
+	-- TODO: since the ability phase funcs are screwed up, can't get when building was canceled
+	-- due to right click
+	function keys:OnCanceled( callback )
+		keys.onCanceledCallback = callback
+	end
+
 	local hAbility = keys.ability
 	local abilName = hAbility:GetAbilityName()
 	local caster = keys.caster
@@ -251,39 +279,46 @@ function BuildingHelper:AddBuilding(keys)
 		playersHero:SetGold(playersHero:GetGold()+goldCost, false)
 	end
 
+	local resources = {}
+	local notEnoughResources = {}
+	-- Check other resource costs.
+	local abilitySpecials = {}
+	if buildingTable["AbilitySpecial"] ~= nil then
+		abilitySpecials = buildingTable["AbilitySpecial"]
+	end
+
+	for k2,v2 in pairs(abilitySpecials) do
+		if abilitySpecials[k2] ~= nil then
+			local abilitySpecial = abilitySpecials[k2]
+			for k3,v3 in pairs(abilitySpecial) do
+				if string.starts(k3, "resource_") then
+					local cost = tonumber(abilitySpecial[k3])
+					local resourceName = string.sub(k3, 10):lower()
+					resources[resourceName] = cost
+					--print("Detected resource: " .. resourceName)
+					if player[resourceName] == nil then
+						player[resourceName] = 0
+					end
+					if player[resourceName] < cost then
+						notEnoughResources[resourceName] = cost-player[resourceName]
+					end
+				end
+			end
+		end
+	end
+
+	buildingTable.resources = resources
+
+	if TableLength(notEnoughResources) > 0 then
+		return {["error"] = "not_enough_resources", ["resourceTable"] = notEnoughResources}
+	end
+
 	--setup the dummy for model ghost
 	if player.modelGhostDummy ~= nil then
 		player.modelGhostDummy:RemoveSelf()
 	end
 
 	player.modelGhostDummy = CreateUnitByName(unitName, OutOfWorldVector, false, nil, nil, caster:GetTeam())
-
-	-- Callbacks
-	function keys:OnConstructionStarted( callback )
-		keys.onConstructionStarted = callback
-	end
-
-	function keys:OnConstructionCompleted( callback )
-		keys.onConstructionCompleted = callback
-	end
-
-	function keys:EnableFireEffect( sFireEffect )
-		keys.fireEffect = sFireEffect
-	end
-
-	function keys:OnBelowHalfHealth( callback )
-		keys.onBelowHalfHealth = callback
-	end
-
-	function keys:OnAboveHalfHealth( callback )
-		keys.onAboveHalfHealth = callback
-	end
-
-	-- TODO: since the ability phase funcs are screwed up, can't get when building was canceled
-	-- due to right click
-	function keys:OnCanceled( callback )
-		keys.onCanceledCallback = callback
-	end
 
 	function player:BeginGhost()
 		if not player.cursorStream then
@@ -317,7 +352,6 @@ function BuildingHelper:AddBuilding(keys)
 					player.lastCursorCenter = nil
 					ClearParticleTable(player.ghost_particles)
 					return
-					--TODO: If buildingPosChosen is false and hero casted another ability, remove the ghost. Listen to OnAbilityUsed
 				end
 
 				if validPos then
@@ -445,9 +479,9 @@ function BuildingHelper:AddBuilding(keys)
 		-- If unit has other move_to_point abils, we should clean them up here
 		AbilityIterator(caster, function(abil)
 			local name = abil:GetAbilityName()
-			if name ~= abilName and string.starts(name, "move_to_point") then
+			if name ~= abilName and string.starts(name, "move_to_point_") then
 				caster:RemoveAbility(name)
-				print("removed " .. name)
+				--print("removed " .. name)
 			end
 		end)
 
@@ -526,7 +560,7 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	local playersHero = buildingTable["playersHero"]
 
 	-- create building entity
-	local unit = CreateUnitByName(order.unitName, order.pos, false, nil, nil, order.team)
+	local unit = CreateUnitByName(order.unitName, order.pos, false, playersHero, nil, order.team)
 	local building = unit --alias
 	-- store reference to the buildingTable in the unit.
 	unit.buildingTable = buildingTable
@@ -1006,4 +1040,15 @@ end
 
 function string.ends(String,End)
    return End=='' or string.sub(String,-string.len(End))==End
+end
+
+function TableLength( t )
+	if t == nil or t == {} then
+		return 0
+	end
+    local len = 0
+    for k,v in pairs(t) do
+        len = len + 1
+    end
+    return len
 end

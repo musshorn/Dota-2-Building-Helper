@@ -32,6 +32,21 @@ end
 function string.ends(String,End)
    return End=='' or string.sub(String,-string.len(End))==End
 end
+
+function VectorString(v)
+  return 'x: ' .. v.x .. ' y: ' .. v.y .. ' z: ' .. v.z
+end
+
+function TableLength( t )
+    if t == nil or t == {} then
+        return 0
+    end
+    local len = 0
+    for k,v in pairs(t) do
+        len = len + 1
+    end
+    return len
+end
 ]]
 
 -- Remove all abilities on a unit.
@@ -209,10 +224,6 @@ end
 
 function DotProduct(v1,v2)
   return (v1.x*v2.x)+(v1.y*v2.y)
-end
-
-function VectorString(v)
-  return 'x: ' .. v.x .. ' y: ' .. v.y .. ' z: ' .. v.z
 end
 
 function PrintTable(t, indent, done)

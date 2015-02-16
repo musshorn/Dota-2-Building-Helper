@@ -130,6 +130,8 @@ Contributing to this repo is absolutely welcomed. Building Helper's goal is to m
 
 [zedor](https://github.com/zedor/CustomError): Custom error in Flash.
 
+[Noya](https://github.com/MNoya): Testing, ideas, building queue (soon to come)
+
 ## Notes
 
 If you're a new modder I highly recommend forking a new starter addon using my [D2ModKit](https://github.com/Myll/Dota-2-ModKit) program.

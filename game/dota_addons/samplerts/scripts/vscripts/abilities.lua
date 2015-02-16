@@ -1,7 +1,33 @@
 function build( keys )
-	BuildingHelper:AddBuilding(keys)
+	local player = keys.caster:GetPlayerOwner()
+	local pID = player:GetPlayerID()
+	local returnTable = BuildingHelper:AddBuilding(keys)
+
+	-- handle errors if any
+	if TableLength(returnTable) > 0 then
+		--PrintTable(returnTable)
+		if returnTable["error"] == "not_enough_resources" then
+			local resourceTable = returnTable["resourceTable"]
+			-- resourceTable is like this: {["lumber"] = 3, ["stone"] = 6}
+			-- so resourceName = cost-playersResourceAmount
+			-- the api searches for player[resourceName]. you need to keep this number updated
+			-- throughout your game
+			local firstResource = nil
+			for k,v in pairs(resourceTable) do
+				if not firstResource then
+					firstResource = k
+				end
+				print("P:" .. pID .. " needs " .. v .. " more " .. k .. ".")
+			end
+			local capitalLetter = firstResource:sub(1,1):upper()
+			firstResource = capitalLetter .. firstResource:sub(2)
+			FireGameEvent( 'custom_error_show', { player_ID = pID, _error = "Not enough " .. firstResource .. "." } )
+			return
+		end
+	end
+
 	keys:OnConstructionStarted(function(unit)
-		print("Started construction of " .. unit:GetUnitName())
+		--print("Started construction of " .. unit:GetUnitName())
 		-- Unit is the building be built.
 		-- Play construction sound
 		-- FindClearSpace for the builder
@@ -10,7 +36,7 @@ function build( keys )
 		unit:SetMana(0)
 	end)
 	keys:OnConstructionCompleted(function(unit)
-		print("Completed construction of " .. unit:GetUnitName())
+		--print("Completed construction of " .. unit:GetUnitName())
 		-- Play construction complete sound.
 		-- Give building its abilities
 		-- add the mana
