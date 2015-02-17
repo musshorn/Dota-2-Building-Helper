@@ -96,23 +96,7 @@ function BuildingHelper:Init(...)
 	--PrintTable(BuildingAbilities)
 end
 
-function BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
-	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
-		print("[BuildingHelper] Error in BlockRectangularArea. One of the values does not divide evenly into 64.")
-		return
-	end
-	local blockedCount = 0
-	for x=leftBorderX+32, rightBorderX-32, 64 do
-		for y=topBorderY-32, bottomBorderY+32,-64 do
-			GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
-			blockedCount=blockedCount+1
-		end
-	end
-end
---[[ TODO: make BlockRectangularArea like DebugDrawBox.
-function BuildingHelper:BlockRectangularArea(vCenter, vMin, vMax)
-	local leftBorderX = vCenter.x-vMin.x
-
+--[[function BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
 	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
 		print("[BuildingHelper] Error in BlockRectangularArea. One of the values does not divide evenly into 64.")
 		return
@@ -125,6 +109,34 @@ function BuildingHelper:BlockRectangularArea(vCenter, vMin, vMax)
 		end
 	end
 end]]
+
+function BuildingHelper:BlockRectangularArea(vPoint1, vPoint2)
+	local leftBorderX = vPoint2.x
+	local rightBorderX = vPoint1.x
+	if vPoint1.x < vPoint2.x then
+		leftBorderX = vPoint1.x
+		rightBorderX = vPoint2.x
+	end
+
+	local bottomBorderY = vPoint2.y
+	local topBorderY = vPoint1.y
+	if vPoint1.y < vPoint2.y then
+		bottomBorderY = vPoint1.y
+		topBorderY = vPoint2.y
+	end
+
+	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
+		print("[BuildingHelper] Error in BlockRectangularArea. One of the values does not divide evenly into 64.")
+		return
+	end
+	local blockedCount = 0
+	for x=leftBorderX+32, rightBorderX-32, 64 do
+		for y=topBorderY-32, bottomBorderY+32,-64 do
+			GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
+			blockedCount=blockedCount+1
+		end
+	end
+end
 
 function BuildingHelper:SetForceUnitsAway(bForceAway)
 	FORCE_UNITS_AWAY=bForceAway

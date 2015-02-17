@@ -630,6 +630,7 @@ function SampleRTS:InitSampleRTS()
 	-- BH Snippet
 	-- This can be called with an optional argument: nHalfMapLength (see readme)
 	BuildingHelper:Init()
+	--BuildingHelper:BlockRectangularArea(Vector(-192,-192,0), Vector(192,192,0))
 end
 
 mode = nil
