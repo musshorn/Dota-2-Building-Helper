@@ -384,16 +384,12 @@ function BuildingHelper:AddBuilding(keys)
 				end
 
 				if validPos then
-					local centerX = SnapToGrid64(cursorPos.x)
-					local centerY = SnapToGrid64(cursorPos.y)
-					local z = cursorPos.z
+					local vBuildingCenter = WorldToGrid64(cursorPos, cursorPos.z)
 					-- Buildings are centered differently when the size is odd.
 					if size%2 ~= 0 then
-						centerX=SnapToGrid32(cursorPos.x)
-						centerY=SnapToGrid32(cursorPos.y)
+						vBuildingCenter = WorldToGrid32(cursorPos, cursorPos.z)
 					end
 
-					local vBuildingCenter = Vector(centerX,centerY,z)
 					local halfSide = (size/2)*64
 					local boundingRect = {leftBorderX = centerX-halfSide, 
 						rightBorderX = centerX+halfSide, 
@@ -402,12 +398,7 @@ function BuildingHelper:AddBuilding(keys)
 
 					-- No need to redraw the particles if the cursor is at the same location. 
 					-- (bug) it will stay green if cursor stays at the same location and a building is built at the location.
-					local cursorSnap = nil
-					if player.lastCursorCenter ~= nil then
-						local cursorSnapX = SnapToGrid32(player.lastCursorCenter.x)
-						local cursorSnapY = SnapToGrid32(player.lastCursorCenter.y)
-						cursorSnap = Vector(cursorSnapX, cursorSnapY, vBuildingCenter.z)
-					end
+					local cursorSnap = WorldToGrid32(player.lastCursorCenter, vBuildingCenter.z)
 					if cursorSnap ~= nil and vBuildingCenter ~= cursorSnap then
 						ClearParticleTable(player.ghost_particles)
 						local areaBlocked = false
@@ -453,15 +444,12 @@ function BuildingHelper:AddBuilding(keys)
 	-- Private function.
 	function AddToGrid(vPoint)
 		-- Remember, our blocked squares are defined according to the square's center.
-		local centerX = SnapToGrid64(vPoint.x)
-		local centerY = SnapToGrid64(vPoint.y)
+		local vBuildingCenter = WorldToGrid64(vPoint, vPoint.z)
 		-- Buildings are centered differently when the size is odd.
 		if size%2 ~= 0 then
-			centerX=SnapToGrid32(vPoint.x)
-			centerY=SnapToGrid32(vPoint.y)
+			vBuildingCenter = WorldToGrid32(vPoint, vPoint.z)
 		end
 
-		local vBuildingCenter = Vector(centerX,centerY,vPoint.z)
 		local halfSide = (size/2)*64
 		local buildingRect = {leftBorderX = centerX-halfSide, 
 			rightBorderX = centerX+halfSide, 
@@ -974,6 +962,15 @@ function BuildingHelper:CloseSquares( vSquareCenters, type )
 	end
 end
 
+function BuildingHelper:AddBuildingsToGrid( entities )
+	for _,ent in pairs(entities) do
+		local pos = ent:GetAbsOrigin()
+		local snapX = SnapToGrid64(pos.x)
+		local
+	end
+
+end
+
 BuildingHelper.FireEffect = "modifier_jakiro_liquid_fire_burn"
 function BuildingHelper:SetDefaultFireEffect( sFireEffect )
 	self.FireEffect = sFireEffect
@@ -1002,6 +999,36 @@ function BuildingHelper:IsAreaBlocked( vSquareCenters )
 end
 
 ------------------------ UTILITY FUNCTIONS --------------------------------------------
+
+function WorldToGrid64( ... )
+	local vWorld = arg[1]
+	local zLevel = arg[2]
+
+	if vWorld == nil then return nil end
+	local snapX = SnapToGrid64(vWorld.x)
+	local snapY = SnapToGrid64(vWorld.y)
+
+	if zLevel ~= nil then
+		return Vector(snapX, snapY, zLevel)
+	else
+		return Vector(snapX, snapY, vWorld.z)
+	end
+end
+
+function WorldToGrid32( ... )
+	local vWorld = arg[1]
+	local zLevel = arg[2]
+
+	if vWorld == nil then return nil end
+	local snapX = SnapToGrid32(vWorld.x)
+	local snapY = SnapToGrid32(vWorld.y)
+
+	if zLevel ~= nil then
+		return Vector(snapX, snapY, zLevel)
+	else
+		return Vector(snapX, snapY, vWorld.z)
+	end
+end
 
 function VectorString(v)
   return 'x: ' .. v.x .. ' y: ' .. v.y .. ' z: ' .. v.z
