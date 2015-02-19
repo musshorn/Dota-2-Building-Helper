@@ -197,10 +197,6 @@ function BuildingHelper:AddBuilding(keys)
 		keys.onAboveHalfHealth = callback
 	end
 
-	function keys:OnBuildingPosChosen( callback )
-		keys.onBuildingPosChosen = callback
-	end	
-
 	-- TODO: since the ability phase funcs are screwed up, can't get when building was canceled
 	-- due to right click
 	function keys:OnCanceled( callback )
@@ -505,9 +501,7 @@ function BuildingHelper:AddBuilding(keys)
 		end)
 
 		if not dontMove then
-			if not caster:HasAbility(abilName) then
-				caster:AddAbility(abilName)
-			end
+			caster:AddAbility(abilName)
 			local abil = caster:FindAbilityByName(abilName)
 			abil.succeeded = false
 			abil:SetLevel(1)
@@ -515,9 +509,6 @@ function BuildingHelper:AddBuilding(keys)
 				["buildingTable"] = buildingTable, ["squares_to_close"] = closed, ["keys"] = keys}
 			Timers:CreateTimer(.03, function()
 				caster:CastAbilityOnPosition(vBuildingCenter, abil, 0)
-				if keys.onBuildingPosChosen ~= nil then
-					keys.onBuildingPosChosen(vBuildingCenter)
-				end
 
 				-- We need a thinker to check if the abil goes out of phase.
 				-- If it does we need to remove the sticky ghost.
