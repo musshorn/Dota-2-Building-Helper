@@ -15,9 +15,9 @@ BH_UNITS = {}
 FORCE_UNITS_AWAY = false
 UsePathingMap = false
 AUTO_SET_HULL = true
+BHGlobalDummySet = false
 PACK_ENABLED = false
 Debug_BH = true
-BH_DUMMY = nil
 
 -- Circle packing math.
 BH_A = math.pow(2,.5) --multi this by rad of building
@@ -91,13 +91,6 @@ function BuildingHelper:Init(...)
 		end
 	end
 	print("Total Blocked squares added: " .. blockedCount)
-
-	--Setup the BH dummy
-	BH_DUMMY = CreateUnitByName("npc_bh_dummy", OutOfWorldVector, false, nil, nil, DOTA_TEAM_GOODGUYS)
-	Timers:CreateTimer(.03, function()
-		if BH_DUMMY == nil then print("BH_DUMMY is nil.") end
-		InitAbilities(BH_DUMMY)
-	end)
 
 	--print("BuildingAbilities: ")
 	--PrintTable(BuildingAbilities)
@@ -376,29 +369,28 @@ function BuildingHelper:AddBuilding(keys)
 				-- Check if the player chose the position.
 				if player.buildingPosChosen then
 					if validPos then
-						keys:AddToGrid(cursorPos)
+						AddToGrid(cursorPos)
 					end
 					FlashUtil:StopDataStream( player.cursorStream )
 					player.cursorStream = nil
 					player.buildingPosChosen = false
 					player.lastCursorCenter = OutOfWorldVector
-					--ClearParticleTable(player.ghost_particles)
+					ClearParticleTable(player.ghost_particles)
 					return
 				end
 
 				if validPos then
-					--print(VectorString(cursorPos))
-					local vBuildingCenter = WorldToGrid64(cursorPos)
+					local vBuildingCenter = WorldToGrid64(cursorPos, cursorPos.z)
 					-- Buildings are centered differently when the size is odd.
 					if size%2 ~= 0 then
-						vBuildingCenter = WorldToGrid32(cursorPos)
+						vBuildingCenter = WorldToGrid32(cursorPos, cursorPos.z)
 					end
 
 					local halfSide = (size/2)*64
-					local boundingRect = {leftBorderX = vBuildingCenter.x-halfSide, 
-						rightBorderX = vBuildingCenter.x+halfSide, 
-						topBorderY = vBuildingCenter.y+halfSide,
-						bottomBorderY = vBuildingCenter.y-halfSide}
+					local boundingRect = {leftBorderX = centerX-halfSide, 
+						rightBorderX = centerX+halfSide, 
+						topBorderY = centerY+halfSide,
+						bottomBorderY = centerY-halfSide}
 
 					-- No need to redraw the particles if the cursor is at the same location. 
 					-- (bug) it will stay green if cursor stays at the same location and a building is built at the location.
@@ -446,19 +438,19 @@ function BuildingHelper:AddBuilding(keys)
 	end
 
 	-- Private function.
-	function keys:AddToGrid(vPoint)
+	function AddToGrid(vPoint)
 		-- Remember, our blocked squares are defined according to the square's center.
-		local vBuildingCenter = WorldToGrid64(vPoint)
+		local vBuildingCenter = WorldToGrid64(vPoint, vPoint.z)
 		-- Buildings are centered differently when the size is odd.
 		if size%2 ~= 0 then
-			vBuildingCenter = WorldToGrid32(vPoint)
+			vBuildingCenter = WorldToGrid32(vPoint, vPoint.z)
 		end
 
 		local halfSide = (size/2)*64
-		local buildingRect = {leftBorderX = vBuildingCenter.x-halfSide, 
-			rightBorderX = vBuildingCenter.x+halfSide, 
-			topBorderY = vBuildingCenter.y+halfSide, 
-			bottomBorderY = vBuildingCenter.y-halfSide}
+		local buildingRect = {leftBorderX = centerX-halfSide, 
+			rightBorderX = centerX+halfSide, 
+			topBorderY = centerY+halfSide, 
+			bottomBorderY = centerY-halfSide}
 			
 		if BuildingHelper:IsRectangularAreaBlocked(buildingRect) then
 			FireGameEvent( 'custom_error_show', { player_ID = pID, _error = "Unable to build there" } )
@@ -469,6 +461,13 @@ function BuildingHelper:AddBuilding(keys)
 			end
 			return nil
 		end
+		
+		-- Keep the particles alive until the building is built.
+		--[[if player.stickyGhost ~= nil then
+			ClearParticleTable(player.stickyGhost)
+		end
+		player.stickyGhost = shallowcopy(player.ghost_particles)
+		player.ghost_particles = {}]]
 
 		-- The spot is not blocked, so add it to the closed squares.
 		local closed = {}
@@ -528,15 +527,6 @@ function BuildingHelper:AddBuilding(keys)
 				end)]]
 			end)
 		end
-
-		-- Keep the particles alive until the building is built.
-		--[[if player.stickyGhost ~= nil then
-			ClearParticleTable(player.stickyGhost)
-		end
-		player.stickyGhost = shallowcopy(player.ghost_particles)]]
-		local abil = BH_DUMMY:FindAbilityByName("bh_dummy")
-		abil:ApplyDataDrivenModifier(BH_DUMMY, builder, "building_canceled", nil)
-
 	end
 
 	player:BeginGhost()
@@ -966,8 +956,8 @@ end
 function BuildingHelper:AddBuildingsToGrid( entities )
 	for _,ent in pairs(entities) do
 		local pos = ent:GetAbsOrigin()
-		local snap = WorldToGrid32(pos)
-		ent:SetAbsOrigin(snap)
+		local snapX = SnapToGrid64(pos.x)
+		local
 	end
 
 end
@@ -1002,12 +992,6 @@ end
 ------------------------ UTILITY FUNCTIONS --------------------------------------------
 
 function WorldToGrid64( ... )
-	if arg == nil then print("arg is nil.") return end
-	PrintTable(arg)
-	if TableLength(arg) < 1 then
-		return
-	end
-	print("WorldToGrid64")
 	local vWorld = arg[1]
 	local zLevel = arg[2]
 
@@ -1023,9 +1007,6 @@ function WorldToGrid64( ... )
 end
 
 function WorldToGrid32( ... )
-	if TableLength(arg) < 1 then
-		return
-	end
 	local vWorld = arg[1]
 	local zLevel = arg[2]
 

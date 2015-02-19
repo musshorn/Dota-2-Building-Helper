@@ -72,10 +72,6 @@ function build( keys )
 	keys:EnableFireEffect("modifier_jakiro_liquid_fire_burn")
 end
 
-function building_canceled( keys )
-	DeepPrintTable(keys)
-end
-
 function create_building_entity( keys )
 	BuildingHelper:InitializeBuildingEntity(keys)
 end
