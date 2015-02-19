@@ -11,6 +11,7 @@ Since BuildingHelper (BH) now has various components in many different locations
 **Add these files to your own addon:**
 * `game/dota_addons/samplerts/scripts/vscripts/buildinghelper.lua`
 * `game/dota_addons/samplerts/scripts/vscripts/FlashUtil.lua`
+* `game/dota_addons/samplerts/scripts/vscripts/timers.lua`
 * `game/dota_addons/samplerts/scripts/vscripts/abilities.lua`
 * `game/dota_addons/samplerts/resource/flash3/FlashUtil.swf`
 * `game/dota_addons/samplerts/resource/flash3/CustomError.swf`
@@ -113,6 +114,14 @@ function build( keys )
 end
 ```
 This really highlights BH's new simplicity and customizability, and is pretty self explanatory. BH handles the complicated stuff in the background, and gives you an easy to use front end interface. You can see all the callbacks BH provides you with in the [build function](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/vscripts/abilities.lua#L1-L32).
+
+#### Custom Resources
+
+BH supports custom resources (ex. lumber, stone, etc). To tell BH that a building uses custom resources, you specify the resource name and its cost in the [AbilitySpecial block](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/npc/npc_abilities_custom.txt#L75-L87). BH will look for `playerHandle["resourceName"]` which you will update throughout your game. Ex. If ability costs 10 stone, BH will search for `player["stone"]` and check the value. *Remember, this is the player handle, NOT the hero handle.* 
+
+IF the player doesn't have enough of the resource, [this code will execute](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/vscripts/abilities.lua#L10-L33).
+
+IF the player does have enough custom resources, BH will wait until construction starts before finally taking out the custom resources (and it will do another check to make sure the player has enough resources).
 
 If you need help I can be reached on irc.gamesurge.net #dota2modhelpdesk or you can [create an issue](https://github.com/Myll/Dota-2-Building-Helper/issues/new).
 
