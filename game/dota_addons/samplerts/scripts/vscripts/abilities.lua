@@ -32,10 +32,14 @@ function build( keys )
 		end
 	end
 
+	keys:OnBuildingPosChosen(function(vPos)
+		-- in WC3 some build sound was played here.
+	end)
+
 	keys:OnConstructionStarted(function(unit)
 		--print("Started construction of " .. unit:GetUnitName())
 		-- Unit is the building be built.
-		-- Play construction sound
+		-- Start playing construction sound
 		-- FindClearSpace for the builder
 		FindClearSpaceForUnit(keys.caster, keys.caster:GetAbsOrigin(), true)
 		-- start the building with 0 mana.
