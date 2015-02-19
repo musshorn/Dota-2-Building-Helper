@@ -11,6 +11,7 @@ Since BuildingHelper (BH) now has various components in many different locations
 **Add these files to your own addon:**
 * `game/dota_addons/samplerts/scripts/vscripts/buildinghelper.lua`
 * `game/dota_addons/samplerts/scripts/vscripts/FlashUtil.lua`
+* `game/dota_addons/samplerts/scripts/vscripts/timers.lua`
 * `game/dota_addons/samplerts/scripts/vscripts/abilities.lua`
 * `game/dota_addons/samplerts/resource/flash3/FlashUtil.swf`
 * `game/dota_addons/samplerts/resource/flash3/CustomError.swf`
