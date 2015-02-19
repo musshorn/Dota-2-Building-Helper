@@ -96,20 +96,6 @@ function BuildingHelper:Init(...)
 	--PrintTable(BuildingAbilities)
 end
 
---[[function BuildingHelper:BlockRectangularArea(leftBorderX, rightBorderX, topBorderY, bottomBorderY)
-	if leftBorderX%64 ~= 0 or rightBorderX%64 ~= 0 or topBorderY%64 ~= 0 or bottomBorderY%64 ~= 0 then
-		print("[BuildingHelper] Error in BlockRectangularArea. One of the values does not divide evenly into 64.")
-		return
-	end
-	local blockedCount = 0
-	for x=leftBorderX+32, rightBorderX-32, 64 do
-		for y=topBorderY-32, bottomBorderY+32,-64 do
-			GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
-			blockedCount=blockedCount+1
-		end
-	end
-end]]
-
 function BuildingHelper:BlockRectangularArea(vPoint1, vPoint2)
 	local leftBorderX = vPoint2.x
 	local rightBorderX = vPoint1.x
@@ -669,9 +655,6 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 					if unit:GetHealth() < fMaxHealth then
 						unit:SetHealth(unit:GetHealth()+nHealthInterval)
 					else
-						if keys2.onConstructionCompleted ~= nil then
-							keys2.onConstructionCompleted(unit)
-						end
 						unit.bUpdatingHealth = false
 					end
 				end
@@ -685,10 +668,10 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 					end
 				end
 			else
-				-- two cases of completion: 1. the unit reaches full health,
-				-- 2. timesUp is true
+				-- completion: timesUp is true
 				if keys2.onConstructionCompleted ~= nil then
 					keys2.onConstructionCompleted(unit)
+					unit.constructionCompleted = true
 				end
 				unit.bUpdatingHealth = false
 			end
@@ -728,24 +711,32 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 		return .2
 	end)
 
-	function unit:Remove(bForceKill)
-		BuildingHelper:OpenSquares(unit.squaresOccupied "string")
+	function unit:RemoveBuilding(bForceKill)
+		self:OpenSquares(unit.squaresOccupied "string")
 		if bForceKill then
 			unit:ForceKill(true)
 		end
 	end
 
-	-- Remove gold, start cooldown ,etc
-	local goldCost = buildingTable.goldCost
+	-- start cooldown if any
 	local cooldown = buildingTable:GetVal("AbilityCooldown", "number")
 	if cooldown == nil then
 		cooldown = 0
 	end
+
 	-- remove gold from playersHero.
+	local goldCost = buildingTable.goldCost
 	if playersHero ~= nil then
 		playersHero:SetGold(playersHero:GetGold()-goldCost, false)
 	end
 	buildingTable["abil"]:StartCooldown(cooldown)
+
+	--[[ ensure player still has enough resources.
+	for k,v in pairs(buildingTable["resources"]) do
+		if player[resourceName] < cost then
+			notEnoughResources[resourceName] = cost-player[resourceName]
+		end
+	end]]
 
 	-- take out custom resources from player
 	local resources = buildingTable.resources
@@ -759,6 +750,13 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	if keys2.onConstructionStarted ~= nil then
 		keys2.onConstructionStarted(unit)
 	end
+end
+
+function BuildingHelper:IsBuilding( hUnit )
+	if not hUnit.isBuilding then
+		return false
+	end
+	return true
 end
 
 -- DEPRECATED

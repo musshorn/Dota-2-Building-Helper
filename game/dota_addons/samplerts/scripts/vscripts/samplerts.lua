@@ -469,8 +469,12 @@ function SampleRTS:OnEntityKilled( keys )
 			GameRules:GetGameModeEntity():SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, self.nRadiantKills )
 		end
 	end
-
 	-- Put code here to handle when an entity gets killed
+	-- START OF BH SNIPPET
+	if BuildingHelper:IsBuilding(killedUnit) then
+		killedUnit:RemoveBuilding(false)
+	end
+	-- END OF BH SNIPPET
 end
 
 
