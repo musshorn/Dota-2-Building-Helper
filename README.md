@@ -23,7 +23,9 @@ Since BuildingHelper (BH) now has various components in many different locations
 * `game/dota_addons/samplerts/scripts/custom_events.txt`
 * `game/dota_addons/samplerts/resource/flash3/custom_ui.txt`
 
-In `game/dota_addons/samplerts/scripts/npc/npc_abilities_custom.txt`, only the abilities that start with `move_to_point_` are required. These abilities are explained more in the "Usage" section.
+In `game/dota_addons/samplerts/scripts/npc/npc_abilities_custom.txt`, all of abilities between `START OF BUILDING HELPER ABILITIES` and `END OF BUILDING HELPER ABILITIES` are necessary.
+
+In `game/dota_addons/samplerts/scripts/npc/npc_units_custom.txt`, the `npc_bh_dummy` unit is needed.
 
 **Add these contents to addon_game_mode.lua:**
 ```
