@@ -1,3 +1,5 @@
+-- The following three functions are necessary for building helper.
+
 function build( keys )
 	local player = keys.caster:GetPlayerOwner()
 	local pID = player:GetPlayerID()
@@ -31,6 +33,11 @@ function build( keys )
 			return
 		end
 	end
+
+	keys:OnBuildingPosChosen(function(vPos)
+		--print("OnBuildingPosChosen")
+		-- in WC3 some build sound was played here.
+	end)
 
 	keys:OnConstructionStarted(function(unit)
 		--print("Started construction of " .. unit:GetUnitName())
@@ -70,6 +77,10 @@ function build( keys )
 	-- Have a fire effect when the building goes below 50% health.
 	-- It will turn off it building goes above 50% health again.
 	keys:EnableFireEffect("modifier_jakiro_liquid_fire_burn")
+end
+
+function building_canceled( keys )
+	BuildingHelper:CancelBuilding(keys)
 end
 
 function create_building_entity( keys )

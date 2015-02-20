@@ -308,7 +308,7 @@ function SampleRTS:OnAbilityUsed(keys)
 		if player.cursorStream ~= nil then
 			if not (string.len(abilityname) > 14 and string.sub(abilityname,1,14) == "move_to_point_") then
 				if not DontCancelBuildingGhostAbils[abilityname] then
-					player.cancelBuilding = true
+					player:CancelGhost()
 				else
 					print(abilityname .. " did not cancel building ghost.")
 				end

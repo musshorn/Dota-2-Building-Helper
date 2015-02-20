@@ -69,7 +69,8 @@ CParticleSystemDefinition CParticleSystemDefinition_0
 		&C_INIT_RemapParticleCountToScalar_10,
 		&C_INIT_CreateWithinSphere_0,
 		&C_INIT_RemapCPtoScalar_0,
-		&C_INIT_RemapCPtoVector_0
+		&C_INIT_RemapCPtoVector_0,
+		&C_INIT_RemapCPtoScalar_2
 	]
 	CParticleOperatorInstance*[] m_Emitters = 
 	[
@@ -135,7 +136,7 @@ C_OP_RenderModels C_OP_RenderModels_5
 	int m_nModelCP = 1
 	float m_flAnimationRate = 25.000000
 	bool m_bAnimated = false
-	bool m_bForceDrawInterlevedWithSiblings = true
+	bool m_bForceDrawInterlevedWithSiblings = false
 	bool m_bSuppressTint = false
 	CParticleVisibilityInputs VisibilityInputs = CParticleVisibilityInputs
 	{
@@ -369,7 +370,7 @@ C_INIT_RemapCPtoVector C_INIT_RemapCPtoVector_0
 	int m_nCPInput = 2
 	int m_nFieldOutput = 6
 	float(3) m_vInputMin = ( 0.000000, 0.000000, 0.000000 )
-	float(3) m_vInputMax = ( 255.000000, 55.000000, 255.000000 )
+	float(3) m_vInputMax = ( 255.000000, 255.000000, 255.000000 )
 	float(3) m_vOutputMin = ( 0.000000, 0.000000, 0.000000 )
 	float(3) m_vOutputMax = ( 1.000000, 1.000000, 1.000000 )
 	float m_flStartTime = -1.000000
@@ -378,6 +379,39 @@ C_INIT_RemapCPtoVector C_INIT_RemapCPtoVector_0
 	bool m_bOffset = false
 	bool m_bAccelerate = false
 	int m_nLocalSpaceCP = -1
+	bool m_bRunForParentApplyKillList = true
+	float m_flOpStartFadeInTime = 0.000000
+	float m_flOpEndFadeInTime = 0.000000
+	float m_flOpStartFadeOutTime = 0.000000
+	float m_flOpEndFadeOutTime = 0.000000
+	float m_flOpFadeOscillatePeriod = 0.000000
+	float m_flOpTimeOffsetMin = 0.000000
+	float m_flOpTimeOffsetMax = 0.000000
+	int m_nOpTimeOffsetSeed = 0
+	int m_nOpStrengthScaleSeed = 0
+	float m_flOpStrengthMinScale = 1.000000
+	float m_flOpStrengthMaxScale = 1.000000
+	int m_nOpTimeScaleSeed = 0
+	float m_flOpTimeScaleMin = 1.000000
+	float m_flOpTimeScaleMax = 1.000000
+	bool m_bDisableOperator = false
+	int m_nOpEndCapState = -1
+	int m_nOpScaleCP = -1
+	string m_Notes = ""
+}
+
+C_INIT_RemapCPtoScalar C_INIT_RemapCPtoScalar_2
+{
+	int m_nCPInput = 4
+	int m_nFieldOutput = 3
+	int m_nField = 0
+	float m_flInputMin = 0.000000
+	float m_flInputMax = 50.000000
+	float m_flOutputMin = 0.000000
+	float m_flOutputMax = 50.000000
+	float m_flStartTime = -1.000000
+	float m_flEndTime = -1.000000
+	bool m_bScaleInitialRange = false
 	bool m_bRunForParentApplyKillList = true
 	float m_flOpStartFadeInTime = 0.000000
 	float m_flOpEndFadeInTime = 0.000000
