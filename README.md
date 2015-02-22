@@ -117,6 +117,26 @@ end
 ```
 This really highlights BH's new simplicity and customizability, and is pretty self explanatory. BH handles the complicated stuff in the background, and gives you an easy to use front end interface. You can see all the callbacks BH provides you with in the [build function](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/vscripts/abilities.lua#L1-L32).
 
+#### Grid and Model Ghost options
+
+In buildinghelper.lua, you will find these 4 variables to control the properties of the ghost particles.
+
+* GRID_ALPHA: Transparency of the green/red grid.
+* MODEL_ALPHA: Transparency of the ghost model
+* RECOLOR_GHOST_MODEL: Choose between displaying the original colors of the building model, or green/red:
+  
+![img](http://puu.sh/g8p9y/ff0863ad95.jpg)
+
+The grid will still turn red, with or without recoloring the ghost model:
+
+![img](http://puu.sh/g8pXj/b26f519783.jpg)
+
+* USE_PROJECTED_GRID: If you are using less than 100 on MODEL_ALPHA, enable this for the grid to be projected under the building:
+  
+![img](http://puu.sh/g8oea/8a50dd1418.jpg)
+  
+
+
 #### Custom Resources
 
 BH supports custom resources (ex. lumber, stone, etc). To tell BH that a building uses custom resources, you specify the resource name and its cost in the [AbilitySpecial block](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/npc/npc_abilities_custom.txt#L75-L87). BH will look for `playerHandle["resourceName"]` which you will update throughout your game. Ex. If ability costs 10 stone, BH will search for `player["stone"]` and check the value. *Remember, this is the player handle, NOT the hero handle.* 
