@@ -49,7 +49,7 @@ function build( keys )
 		unit:SetMana(0)
 	end)
 	keys:OnConstructionCompleted(function(unit)
-		--print("Completed construction of " .. unit:GetUnitName())
+		print("Completed construction of " .. unit:GetUnitName())
 		-- Play construction complete sound.
 		-- Give building its abilities
 		-- add the mana
