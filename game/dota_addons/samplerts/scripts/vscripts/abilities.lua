@@ -3,36 +3,10 @@
 function build( keys )
 	local player = keys.caster:GetPlayerOwner()
 	local pID = player:GetPlayerID()
-	player.lumber = 20
-	player.stone = 10
-	local returnTable = BuildingHelper:AddBuilding(keys)
-	--print("Lumber: " .. player.lumber)
-	--print("Stone: " .. player.stone)
 
-	-- handle errors if any
-	if TableLength(returnTable) > 0 then
-		--PrintTable(returnTable)
-		if returnTable["error"] == "not_enough_resources" then
-			local resourceTable = returnTable["resourceTable"]
-			-- resourceTable is like this: {["lumber"] = 3, ["stone"] = 6}
-			-- so resourceName = cost-playersResourceAmount
-			-- the api searches for player[resourceName]. you need to keep this number updated
-			-- throughout your game
-			local firstResource = nil
-			for k,v in pairs(resourceTable) do
-				if not firstResource then
-					firstResource = k
-				end
-				if Debug_BH then
-					print("P" .. pID .. " needs " .. v .. " more " .. k .. ".")
-				end
-			end
-			local capitalLetter = firstResource:sub(1,1):upper()
-			firstResource = capitalLetter .. firstResource:sub(2)
-			FireGameEvent( 'custom_error_show', { player_ID = pID, _error = "Not enough " .. firstResource .. "." } )
-			return
-		end
-	end
+	-- Check if player has enough resources here. If he doesn't they just return this function.
+	
+	local returnTable = BuildingHelper:AddBuilding(keys)
 
 	keys:OnBuildingPosChosen(function(vPos)
 		--print("OnBuildingPosChosen")
@@ -40,7 +14,9 @@ function build( keys )
 	end)
 
 	keys:OnConstructionStarted(function(unit)
-		--print("Started construction of " .. unit:GetUnitName())
+		if Debug_BH then
+			print("Started construction of " .. unit:GetUnitName())
+		end
 		-- Unit is the building be built.
 		-- Play construction sound
 		-- FindClearSpace for the builder
@@ -49,7 +25,9 @@ function build( keys )
 		unit:SetMana(0)
 	end)
 	keys:OnConstructionCompleted(function(unit)
-		print("Completed construction of " .. unit:GetUnitName())
+		if Debug_BH then
+			print("Completed construction of " .. unit:GetUnitName())
+		end
 		-- Play construction complete sound.
 		-- Give building its abilities
 		-- add the mana

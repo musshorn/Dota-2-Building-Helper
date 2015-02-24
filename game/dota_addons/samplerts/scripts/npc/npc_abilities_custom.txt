@@ -72,20 +72,6 @@
 		//-------------------------------------------------------------------------------------------------------------
 		"AbilityManaCost"				"0"
 		
-		"AbilitySpecial"
-		{
-			"01"
-			{
-				"var_type"			"FIELD_INTEGER"
-				"resource_lumber"			"20"
-			}
-			"02"
-			{
-				"var_type"			"FIELD_INTEGER"
-				"resource_stone"			"10"
-			}
-		}
-		
 		"OnSpellStart"
 		{
 			"RunScript"
