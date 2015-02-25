@@ -160,7 +160,6 @@ function SampleRTS:OnHeroInGame(hero)
 		local peasant = CreateUnitByName("npc_peasant", hero:GetAbsOrigin()+RandomVector(300), true, hero, hero, hero:GetTeamNumber())
 		peasant:SetOwner(hero)
 		peasant:SetControllableByPlayer(hero:GetPlayerID(), true)
-		InitAbilities(peasant)
 	end
 end
 
