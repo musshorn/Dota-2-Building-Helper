@@ -296,6 +296,7 @@
 		"Ability1"					"gather_lumber"
 		"Ability2"					"return_resources"
 		"Ability3"					"build_barracks"
+		"Ability4"					"build_arrow_tower"
 		
 		// Armor
 		//----------------------------------------------------------------
@@ -615,7 +616,7 @@
 		
 		// Building Cost Stats
 		//----------------------------------------------------------------
-		"GoldCost"					"180"
+		"GoldCost"					"10"
 		"LumberCost"				"50"
 		"BuildTime"					"60"
 		

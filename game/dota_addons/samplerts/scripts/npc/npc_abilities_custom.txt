@@ -323,7 +323,7 @@
 
 		"UnitName"						"npc_barracks"
 		"AbilityCooldown"				"0"
-		"AbilityGoldCost"				"180"
+		"AbilityGoldCost"				"10"
 		// End of BuildingHelper info
 		
 		"OnSpellStart"

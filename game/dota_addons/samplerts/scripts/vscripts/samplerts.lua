@@ -160,6 +160,7 @@ function SampleRTS:OnHeroInGame(hero)
 		local peasant = CreateUnitByName("npc_peasant", hero:GetAbsOrigin()+RandomVector(300), true, hero, hero, hero:GetTeamNumber())
 		peasant:SetOwner(hero)
 		peasant:SetControllableByPlayer(hero:GetPlayerID(), true)
+		InitAbilities(peasant)
 	end
 end
 
@@ -299,19 +300,15 @@ function SampleRTS:OnAbilityUsed(keys)
 
 	local player = EntIndexToHScript(keys.PlayerID)
 	local abilityname = keys.abilityname
-	local hero = player:GetAssignedHero()
 
 	-- Cancel the ghost if the player casts another active ability.
 	-- Start of BH Snippet:
-	if hero ~= nil then
-		local abil = hero:FindAbilityByName(abilityname)
-		if player.cursorStream ~= nil then
-			if not (string.len(abilityname) > 14 and string.sub(abilityname,1,14) == "move_to_point_") then
-				if not DontCancelBuildingGhostAbils[abilityname] then
-					player:CancelGhost()
-				else
-					print(abilityname .. " did not cancel building ghost.")
-				end
+	if player.cursorStream ~= nil then
+		if not (string.len(abilityname) > 14 and string.sub(abilityname,1,14) == "move_to_point_") then
+			if not DontCancelBuildingGhostAbils[abilityname] then
+				player:CancelGhost()
+			else
+				print(abilityname .. " did not cancel building ghost.")
 			end
 		end
 	end
