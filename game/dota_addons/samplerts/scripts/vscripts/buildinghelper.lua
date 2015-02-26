@@ -101,6 +101,7 @@ function BuildingHelper:Init(...)
 
 	--Setup the BH dummy
 	BH_DUMMY = CreateUnitByName("npc_bh_dummy", OutOfWorldVector, false, nil, nil, DOTA_TEAM_GOODGUYS)
+	InitAbilities(BH_DUMMY)
 
 	--print("BuildingAbilities: ")
 	--PrintTable(BuildingAbilities)
@@ -519,7 +520,10 @@ function BuildingHelper:AddBuilding(keys)
 		caster.orders[DoUniqueString("order")] = {["unitName"] = unitName, ["pos"] = vBuildingCenter, ["team"] = caster:GetTeam(),
 			["buildingTable"] = buildingTable, ["squares_to_close"] = closed, ["keys"] = keys}
 		Timers:CreateTimer(.03, function()
-			caster:CastAbilityOnPosition(vBuildingCenter, abil, 0)
+			local casterIndex = caster:GetEntityIndex()
+			local order = DOTA_UNIT_ORDER_CAST_POSITION
+			local abilIndex = abil:GetEntityIndex()
+			ExecuteOrderFromTable({ UnitIndex = casterIndex, OrderType = DOTA_UNIT_ORDER_CAST_POSITION, AbilityIndex = abilIndex, Position = vBuildingCenter, Queue = false}) 
 			if keys.onBuildingPosChosen ~= nil then
 				keys.onBuildingPosChosen(vBuildingCenter)
 				keys.onBuildingPosChosen = nil
