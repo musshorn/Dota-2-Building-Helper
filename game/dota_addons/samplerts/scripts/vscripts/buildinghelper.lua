@@ -625,9 +625,16 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	local bUpdateHealth = buildingTable:GetVal("UpdateHealth", "bool")
 	local fMaxHealth = unit:GetMaxHealth()
 	-- health to add every tick until build time is completed.
-	local nHealthInterval = (fMaxHealth*BUILDINGHELPER_THINK)/buildTime
-	-- increase the health interval by 25%.
-	nHealthInterval = nHealthInterval + .25*nHealthInterval
+	-- First we estimate the real time we have to complete the building.
+	local nTickEstimate = buildTime * 0.1
+	local nBuildEstimate = buildTime - nTickEstimate
+	-- Now we calculate the health interval by the adjusted time to complete
+	local nHealthInterval = fMaxHealth / (nBuildEstimate / BUILDINGHELPER_THINK)
+	-- SetHealth only takes an int so we'll floor the interval and keep track of the difference
+	local nSmallHealthInterval = nHealthInterval - math.floor(nHealthInterval) -- just the floating point component
+	nHealthInterval = math.floor(nHealthInterval)
+	local nHPAdjustment = 0
+	local nAddedHealth = 0
 
 	if nHealthInterval < 1 then
 		--print("[BuildingHelper] nHealthInterval is below 1. Setting nHealthInterval to 1. The unit will gain full health before the build time ends.\n" ..
@@ -676,7 +683,16 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 			if not timesUp then
 				if unit.bUpdatingHealth then
 					if unit:GetHealth() < fMaxHealth then
-						unit:SetHealth(unit:GetHealth()+nHealthInterval)
+						-- add the float from nHealthInterval. if the floats > 1 then add an extra health this tick
+						nHPAdjustment = nHPAdjustment + nSmallHealthInterval
+						if nHPAdjustment > 1 then
+							unit:SetHealth(unit:GetHealth() + nHealthInterval + 1)
+							nHPAdjustment = nHPAdjustment - 1
+							nAddedHealth = nAddedHealth + nHealthInterval + 1
+						else
+							unit:SetHealth(unit:GetHealth() + nHealthInterval)
+							nAddedHealth = nAddedHealth + nHealthInterval
+						end
 					else
 						unit.bUpdatingHealth = false
 					end
@@ -691,9 +707,10 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 					end
 				end
 			else
-				-- completion: timesUp is true
+				-- completion: timesUp is true, add the final tick of hp
 				if keys2.onConstructionCompleted ~= nil then
 					keys2.onConstructionCompleted(unit)
+					unit:SetHealth(unit:GetHealth() + (fMaxHealth - nAddedHealth) )
 					unit.constructionCompleted = true
 				end
 				unit.bUpdatingHealth = false
