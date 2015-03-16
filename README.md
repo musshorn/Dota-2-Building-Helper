@@ -29,11 +29,11 @@ In `game/dota_addons/samplerts/scripts/npc/npc_units_custom.txt`, the `npc_bh_du
 
 **Add these contents to addon_game_mode.lua:**
 ```
-require('timers.lua')
-require('physics.lua')
-require('FlashUtil.lua')
-require('buildinghelper.lua')
-require('abilities.lua')
+require('timers')
+require('physics')
+require('FlashUtil')
+require('buildinghelper')
+require('abilities')
 PrecacheResource("particle_folder", "particles/buildinghelper", context)
 ```
 BH requires some snippets of code in game event functions. See [SampleRTS.lua](https://github.com/Myll/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/scripts/vscripts/samplerts.lua) and CTRL+F "BH Snippet".
