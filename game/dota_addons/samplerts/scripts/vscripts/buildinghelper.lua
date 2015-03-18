@@ -101,7 +101,6 @@ function BuildingHelper:Init(...)
 
 	--Setup the BH dummy
 	BH_DUMMY = CreateUnitByName("npc_bh_dummy", OutOfWorldVector, false, nil, nil, DOTA_TEAM_GOODGUYS)
-	InitAbilities(BH_DUMMY)
 
 	--print("BuildingAbilities: ")
 	--PrintTable(BuildingAbilities)
