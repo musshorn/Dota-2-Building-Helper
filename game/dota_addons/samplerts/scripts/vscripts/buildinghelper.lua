@@ -11,6 +11,20 @@
 BUILDINGHELPER_THINK = 0.03
 GRIDNAV_SQUARES = {}
 BUILDING_SQUARES = {}
+
+--these tables are special for restricted areas. 
+MYLL_SQUARES = {}
+--players could plant several trigger entities in map to indicate the open area for each player
+--name rule for those construction area:
+--                           buildarea_playerid
+--                       ex. buildarea_0 buildarea_1 etc.
+--                           multi entities with the same name is valid(?)
+CHECKINGRADIUS = 10      --very small checking radius for each square vector to see if it is inside the construction zone
+for i=0,9,1 do
+	MYLL_SQUARES[i]={}
+end	
+
+
 BH_UNITS = {}
 FORCE_UNITS_AWAY = false
 UsePathingMap = false
@@ -94,7 +108,20 @@ function BuildingHelper:Init(...)
 			if GridNav:IsBlocked(Vector(x,y,0)) or not GridNav:IsTraversable(Vector(x,y,0)) then
 				GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
 				blockedCount=blockedCount+1
+
 			end
+		    --for each square check if the square is inside the construction zone
+            local temp=Entities:FindByName(nil, "buildarea_0")
+            print(temp:GetName())
+            for _,thing in pairs(Entities:FindAllInSphere(GetGroundPosition(Vector(x,y,0), nil), CHECKINGRADIUS))  do
+                --find the construction zone where this vector is in
+                local AreaName=thing:GetName()
+                local pid=tonumber(string.sub(AreaName,11,11))
+                print("this vector is inside the player ",pid," 's building area (",x,",", y, ")" )
+                if (not(pid==nil)) then
+                  MYLL_SQUARES[pid][VectorString(Vector(x,y,0))] = true
+                end  
+            end
 		end
 	end
 	print("Total Blocked squares added: " .. blockedCount)
@@ -131,6 +158,7 @@ function BuildingHelper:BlockRectangularArea(vPoint1, vPoint2)
 		for y=topBorderY-32, bottomBorderY+32,-64 do
 			GRIDNAV_SQUARES[VectorString(Vector(x,y,0))] = true
 			blockedCount=blockedCount+1
+            
 		end
 	end
 end
@@ -409,7 +437,7 @@ function BuildingHelper:AddBuilding(keys)
 								ParticleManager:SetParticleControl(particle, 0, Vector(x,y,groundZ))
 								--print("Moving " .. particle .. " to " .. VectorString(Vector(x,y,groundZ)))
 
-								if IsSquareBlocked(Vector(x,y,z), true) then
+								if IsSquareBlocked(Vector(x,y,z), true, player:GetPlayerID()) then
 									ParticleManager:SetParticleControl(particle, 2, Vector(255,0,0))
 									areaBlocked = true
 									--DebugDrawBox(Vector(x,y,z), Vector(-32,-32,0), Vector(32,32,1), 255, 0, 0, 40, delta)
@@ -472,7 +500,7 @@ function BuildingHelper:AddBuilding(keys)
 			topBorderY = centerY+halfSide, 
 			bottomBorderY = centerY-halfSide}
 			
-		if BuildingHelper:IsRectangularAreaBlocked(buildingRect) then
+		if BuildingHelper:IsRectangularAreaBlocked(buildingRect,pID) then
 			FireGameEvent( 'custom_error_show', { player_ID = pID, _error = "Unable to build there" } )
 			ClearParticleTable(player.ghost_particles)
 
@@ -559,7 +587,9 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	local orders = builder.orders
 	local pos = keys.target_points[1]
 	keys.ability.succeeded = true
-
+    
+    --for peasant it cant get its player id. will fix in the future
+    local pid=0
 	-- search and get the correct order
 	local order = nil
 	local key = ""
@@ -582,7 +612,7 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 
 	-- let's still make sure we can build here. Someone else may have built a building here
 	-- during the time walking to the spot.
-	if BuildingHelper:IsAreaBlocked(squaresToClose) then
+	if BuildingHelper:IsAreaBlocked(squaresToClose, pid) then
 		return
 	end
 
@@ -1019,9 +1049,9 @@ function BuildingHelper:OpenSquares( vSquareCenters, type )
 	end
 end
 
-function BuildingHelper:IsAreaBlocked( vSquareCenters )
+function BuildingHelper:IsAreaBlocked( vSquareCenters , pid)
 	for i,v in ipairs(vSquareCenters) do
-		if IsSquareBlocked(v, false) then
+		if IsSquareBlocked(v, false, pid) then
 			return true
 		end
 	end
@@ -1044,11 +1074,11 @@ function VectorString(v)
   return 'x: ' .. v.x .. ' y: ' .. v.y .. ' z: ' .. v.z
 end
 
-function BuildingHelper:IsRectangularAreaBlocked(boundingRect)
+function BuildingHelper:IsRectangularAreaBlocked(boundingRect , pid )
 	for x=boundingRect.leftBorderX+32,boundingRect.rightBorderX-32,64 do
 		for y=boundingRect.topBorderY-32,boundingRect.bottomBorderY+32,-64 do
 			local vect = Vector(x,y,0)
-			if GRIDNAV_SQUARES[VectorString(vect)] or BUILDING_SQUARES[VectorString(vect)] then
+			if GRIDNAV_SQUARES[VectorString(vect)] or BUILDING_SQUARES[VectorString(vect)] or not(MYLL_SQUARES[pid][VectorString(vect)]) then
 				return true
 			end
 		end
@@ -1056,12 +1086,12 @@ function BuildingHelper:IsRectangularAreaBlocked(boundingRect)
 	return false
 end
 
-function IsSquareBlocked( sqCenter, bVectorForm )
+function IsSquareBlocked( sqCenter, bVectorForm, pid )
 	if bVectorForm then
 		sqCenter = Vector(sqCenter.x, sqCenter.y, 0)
-		return GRIDNAV_SQUARES[VectorString(sqCenter)] or BUILDING_SQUARES[VectorString(sqCenter)]
+		return GRIDNAV_SQUARES[VectorString(sqCenter)] or BUILDING_SQUARES[VectorString(sqCenter)] or not(MYLL_SQUARES[pid][VectorString(sqCenter)])
 	else
-		return GRIDNAV_SQUARES[sqCenter] or BUILDING_SQUARES[sqCenter]
+		return GRIDNAV_SQUARES[sqCenter] or BUILDING_SQUARES[sqCenter] or not(MYLL_SQUARES[pid][sqCenter])
 	end
 
 end
