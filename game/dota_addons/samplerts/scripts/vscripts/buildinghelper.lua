@@ -12,6 +12,8 @@ BUILDINGHELPER_THINK = 0.03
 GRIDNAV_SQUARES = {}
 BUILDING_SQUARES = {}
 
+--change this variable to be false if u dont want the construction area for each player
+RESTRICTION_AREA_OPEN=true
 --these tables are special for restricted areas. 
 MYLL_SQUARES = {}
 --players could plant several trigger entities in map to indicate the open area for each player
@@ -128,7 +130,6 @@ function BuildingHelper:Init(...)
 
 	--Setup the BH dummy
 	BH_DUMMY = CreateUnitByName("npc_bh_dummy", OutOfWorldVector, false, nil, nil, DOTA_TEAM_GOODGUYS)
-	InitAbilities(BH_DUMMY)
 
 	--print("BuildingAbilities: ")
 	--PrintTable(BuildingAbilities)
@@ -612,7 +613,8 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 
 	-- let's still make sure we can build here. Someone else may have built a building here
 	-- during the time walking to the spot.
-	if BuildingHelper:IsAreaBlocked(squaresToClose, pid) then
+	
+	if BuildingHelper:IsAreaBlocked(squaresToClose, pid) and (not RESTRICTION_AREA_OPEN) then
 		return
 	end
 
@@ -850,7 +852,6 @@ function BuildingHelper:AddBuilding(building)
 	building.BHParticles = {}
 	
 	building:SetControllableByPlayer(building.BHOwner:GetPlayerID(), true)
-
 	function building:PackWithDummies()
 		--BH_A = math.pow(2,.5) --multi this by rad of building
 		--BH_cos45 = math.pow(.5,.5) -- cos(45)
@@ -874,11 +875,9 @@ function BuildingHelper:AddBuilding(building)
 		-- bot right disc
 		local br_x = tr_x
 		local br_y = bl_y
-
 		local s = building.BHSize*64
 		--DebugDrawCircle(origin, Vector(0,255,0), 5, building:GetPaddedCollisionRadius(), false, 60)
 		--DebugDrawBox(origin, Vector(-1*s/2,-1*s/2,0), Vector(s/2,s/2,0), 0, 0, 255, 0, 60)
-
 		local topRight = CreateUnitByName("npc_bh_dummy", Vector(tr_x,tr_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		local dummyPadding = 10
 		Timers:CreateTimer(function()
@@ -887,28 +886,24 @@ function BuildingHelper:AddBuilding(building)
 			topRight:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(tr_x,tr_y,0), Vector(255,0,0), 5, topRight:GetPaddedCollisionRadius(), false, 60)
 		end)
-
 		local topLeft = CreateUnitByName("npc_bh_dummy", Vector(tl_x,tl_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
 			topLeft:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			topLeft:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(tl_x,tl_y,0), Vector(255,0,0), 5, topLeft:GetPaddedCollisionRadius(), false, 60)
 		end)
-
 		local bottomLeft = CreateUnitByName("npc_bh_dummy", Vector(bl_x,bl_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
 			bottomLeft:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			bottomLeft:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(bl_x,bl_y,0), Vector(255,0,0), 5, bottomLeft:GetPaddedCollisionRadius(), false, 60)
 		end)
-
 		local bottomRight = CreateUnitByName("npc_bh_dummy", Vector(br_x,br_y,0), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		Timers:CreateTimer(function()
 			bottomRight:FindAbilityByName("bh_dummy_unit"):SetLevel(1)
 			bottomRight:SetHullRadius(discRad-dummyPadding)
 			--DebugDrawCircle(Vector(br_x,br_y,0), Vector(255,0,0), 5, bottomRight:GetPaddedCollisionRadius(), false, 60)
 		end)
-
 		building.packers = {topRight, topLeft, bottomLeft, bottomRight}
 		building.packed = true
 	end
@@ -941,7 +936,6 @@ function BuildingHelper:AddBuilding(building)
 			end
 		end
 	end
-
 	-- Dynamic packing.
 	function building:Pack()
 		-- setup global dummy if not already setup.
@@ -959,16 +953,13 @@ function BuildingHelper:AddBuilding(building)
 		end
 		building:PackWithDummies()
 	end
-
 	function building:SetHull()
 		building:SetHullRadius(building.BHSize*64/2-building:GetCollisionPadding())
 	end
-
 	if (AUTO_SET_HULL) then
 		building:SetHull()
 		building.hullSet = true
 	end
-
 	-- Auto packing
 	if PACK_ENABLED then
 		-- setup global dummy if not already setup.
@@ -986,12 +977,10 @@ function BuildingHelper:AddBuilding(building)
 		end
 		building:PackWithDummies()
 	end
-
 	-- find clear space for building owner on the next frame.
 	  Timers:CreateTimer(function()
       	FindClearSpaceForUnit(building.BHOwner, building.BHOwner:GetAbsOrigin(), true)
    	  end)
-
 	--[[for id,unit in pairs(BH_UNITS) do
 		if unit.bNeedsToJump then
 			--print("jumping")
@@ -999,7 +988,6 @@ function BuildingHelper:AddBuilding(building)
 			unit.bNeedsToJump=false
 		end
 	end
-
 	
 	-- fire effect timer
 	if FIRE_EFFECTS_ENABLED then
@@ -1078,7 +1066,7 @@ function BuildingHelper:IsRectangularAreaBlocked(boundingRect , pid )
 	for x=boundingRect.leftBorderX+32,boundingRect.rightBorderX-32,64 do
 		for y=boundingRect.topBorderY-32,boundingRect.bottomBorderY+32,-64 do
 			local vect = Vector(x,y,0)
-			if GRIDNAV_SQUARES[VectorString(vect)] or BUILDING_SQUARES[VectorString(vect)] or not(MYLL_SQUARES[pid][VectorString(vect)]) then
+			if GRIDNAV_SQUARES[VectorString(vect)] or BUILDING_SQUARES[VectorString(vect)] or ((not(MYLL_SQUARES[pid][VectorString(vect)])) and (RESTRICTION_AREA_OPEN)) then
 				return true
 			end
 		end
@@ -1089,9 +1077,9 @@ end
 function IsSquareBlocked( sqCenter, bVectorForm, pid )
 	if bVectorForm then
 		sqCenter = Vector(sqCenter.x, sqCenter.y, 0)
-		return GRIDNAV_SQUARES[VectorString(sqCenter)] or BUILDING_SQUARES[VectorString(sqCenter)] or not(MYLL_SQUARES[pid][VectorString(sqCenter)])
+		return GRIDNAV_SQUARES[VectorString(sqCenter)] or BUILDING_SQUARES[VectorString(sqCenter)] or ((not(MYLL_SQUARES[pid][VectorString(sqCenter)])) and (RESTRICTION_AREA_OPEN))
 	else
-		return GRIDNAV_SQUARES[sqCenter] or BUILDING_SQUARES[sqCenter] or not(MYLL_SQUARES[pid][sqCenter])
+		return GRIDNAV_SQUARES[sqCenter] or BUILDING_SQUARES[sqCenter] or ((not(MYLL_SQUARES[pid][sqCenter])) and (RESTRICTION_AREA_OPEN))
 	end
 
 end
