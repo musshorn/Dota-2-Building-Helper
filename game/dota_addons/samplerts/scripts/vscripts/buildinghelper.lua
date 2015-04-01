@@ -627,7 +627,9 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 
 	local fAddedHealth = 0
 	-- health to add every tick until build time is completed.
+	local fUpdateHealthInterval = buildTime / fMaxHealth
 	local fserverFrameRate = 1/30 -- Server executes as close to 1/30 as it can
+	
 	local nHealthInterval = fMaxHealth / (buildTime / fserverFrameRate)
 	local fSmallHealthInterval = nHealthInterval - math.floor(nHealthInterval) -- just the floating point component
 	nHealthInterval = math.floor(nHealthInterval)
@@ -669,40 +671,78 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 			bScaling=true
 		end
 	end
-	-- health timer
-	unit.updateHealthTimer = DoUniqueString('health')	
-	Timers:CreateTimer(unit.updateHealthTimer, {
-    callback = function()
-		if IsValidEntity(unit) then
-			local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
-			if not timesUp then
-				if unit.bUpdatingHealth then
-					fHPAdjustment = fHPAdjustment + fSmallHealthInterval
-					if fHPAdjustment > 1 then
-						unit:SetHealth(unit:GetHealth() + nHealthInterval + 1)
-						fHPAdjustment = fHPAdjustment - 1
-						fAddedHealth = fAddedHealth + nHealthInterval + 1
-					else
-						unit:SetHealth(unit:GetHealth() + nHealthInterval)
-						fAddedHealth = fAddedHealth + nHealthInterval
+
+
+	
+
+	-- Health Timers
+	-- If the tick would be faster than 1 frame, adjust the HP gained per frame
+	if fUpdateHealthInterval <= fserverFrameRate then
+		unit.updateHealthTimer = DoUniqueString('health')	
+		Timers:CreateTimer(unit.updateHealthTimer, {
+	    callback = function()
+			if IsValidEntity(unit) then
+				local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
+				if not timesUp then
+					if unit.bUpdatingHealth then
+						fHPAdjustment = fHPAdjustment + fSmallHealthInterval
+						if fHPAdjustment > 1 then
+							unit:SetHealth(unit:GetHealth() + nHealthInterval + 1)
+							fHPAdjustment = fHPAdjustment - 1
+							fAddedHealth = fAddedHealth + nHealthInterval + 1
+						else
+							unit:SetHealth(unit:GetHealth() + nHealthInterval)
+							fAddedHealth = fAddedHealth + nHealthInterval
+						end
 					end
+				else
+					-- completion: timesUp is true
+					if keys2.onConstructionCompleted ~= nil then
+						keys2.onConstructionCompleted(unit)
+						unit.constructionCompleted = true
+					end
+					unit.bUpdatingHealth = false
+					-- clean up the timer if we don't need it.
+					return nil
 				end
 			else
-				-- completion: timesUp is true
-				if keys2.onConstructionCompleted ~= nil then
-					keys2.onConstructionCompleted(unit)
-					unit.constructionCompleted = true
-				end
-				unit.bUpdatingHealth = false
-				-- clean up the timer if we don't need it.
+				-- not valid ent
 				return nil
 			end
-		else
-			-- not valid ent
-			return nil
-		end
-	    return fserverFrameRate
-    end})
+		    return fserverFrameRate
+	    end})
+
+	-- Update every 1 HP with a variable return time (this is the case with buildings that last longer)
+	else
+		unit.updateHealthTimer = DoUniqueString('health')	
+		Timers:CreateTimer(unit.updateHealthTimer, {
+	    callback = function()
+			if IsValidEntity(unit) then
+				local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
+				if not timesUp then
+					if unit.bUpdatingHealth then
+						if unit:GetHealth() < fMaxHealth then
+							unit:SetHealth(unit:GetHealth() + 1)
+						else
+							unit.bUpdatingHealth = false
+						end
+					end
+				else
+					-- completion: timesUp is true
+					if keys2.onConstructionCompleted ~= nil then
+						keys2.onConstructionCompleted(unit)
+						unit.constructionCompleted = true
+					end
+					-- clean up the timer if we don't need it.
+					return nil
+				end
+			else
+				-- not valid ent
+				return nil
+			end
+		    return fUpdateHealthInterval
+	    end})
+	end
 
     -- scale timer
     unit.updateScaleTimer = DoUniqueString('scale')
