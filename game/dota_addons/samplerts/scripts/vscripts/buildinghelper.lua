@@ -625,8 +625,13 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 	local bUpdateHealth = buildingTable:GetVal("UpdateHealth", "bool")
 	local fMaxHealth = unit:GetMaxHealth()
 
-	-- Update every 1 HP
-	local fUpdateHealthInterval = buildTime / fMaxHealth
+	local fAddedHealth = 0
+	-- health to add every tick until build time is completed.
+	local fserverFrameRate = 1/30 -- Server executes as close to 1/30 as it can
+	local nHealthInterval = fMaxHealth / (buildTime / fserverFrameRate)
+	local fSmallHealthInterval = nHealthInterval - math.floor(nHealthInterval) -- just the floating point component
+	nHealthInterval = math.floor(nHealthInterval)
+	local fHPAdjustment = 0
 
 	-- whether we should scale the building.
 	local bScale = buildingTable:GetVal("Scale", "bool")
@@ -664,7 +669,6 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 			bScaling=true
 		end
 	end
-
 	-- health timer
 	unit.updateHealthTimer = DoUniqueString('health')	
 	Timers:CreateTimer(unit.updateHealthTimer, {
@@ -673,10 +677,14 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 			local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
 			if not timesUp then
 				if unit.bUpdatingHealth then
-					if unit:GetHealth() < fMaxHealth then
-						unit:SetHealth(unit:GetHealth() + 1)
+					fHPAdjustment = fHPAdjustment + fSmallHealthInterval
+					if fHPAdjustment > 1 then
+						unit:SetHealth(unit:GetHealth() + nHealthInterval + 1)
+						fHPAdjustment = fHPAdjustment - 1
+						fAddedHealth = fAddedHealth + nHealthInterval + 1
 					else
-						unit.bUpdatingHealth = false
+						unit:SetHealth(unit:GetHealth() + nHealthInterval)
+						fAddedHealth = fAddedHealth + nHealthInterval
 					end
 				end
 			else
@@ -693,7 +701,7 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 			-- not valid ent
 			return nil
 		end
-	    return fUpdateHealthInterval
+	    return fserverFrameRate
     end})
 
     -- scale timer
@@ -708,7 +716,6 @@ function BuildingHelper:InitializeBuildingEntity(keys)
 					if fCurrentScale < fMaxScale then
 						fCurrentScale = fCurrentScale+fScaleInterval
 						unit:SetModelScale(fCurrentScale)
-						print(fCurrentScale)
 					else
 						unit:SetModelScale(fMaxScale)
 						bScaling = false
