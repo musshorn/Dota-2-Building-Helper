@@ -146,7 +146,7 @@ function SampleRTS:OnHeroInGame(hero)
 	InitAbilities(hero)
 
 	-- Show a popup with game instructions.
-    ShowGenericPopupToPlayer(hero.player, "#samplerts_instructions_title", "#samplerts_instructions_body", "", "", DOTA_SHOWGENERICPOPUP_TINT_SCREEN )
+  --  ShowGenericPopupToPlayer(hero.player, "#samplerts_instructions_title", "#samplerts_instructions_body", "", "", DOTA_SHOWGENERICPOPUP_TINT_SCREEN )
 
 	-- This line for example will set the starting gold of every hero to 500 unreliable gold
 	hero:SetGold(500, false)
