@@ -13,8 +13,15 @@ If you want the current actually functional Building Helper, go here. [Building-
 
 Update 21/4:
 * First "Viable" release
-	- Shift-queue implemented, needs a bit more testing
+	- Shift-queue implemented
 	- Should work in multiplayer, untested
+	- Multiple builders building multiple buildings at the same time
+
+* Known broken/buggy things:
+  - Flash green square still looks weird, too big on cliffs too. 
+  - If you click fast some mouse clicks arn't registered? Debug flashutil/code and see if it's throwing them away
+  - Gridnav is ok for 2x2 units, looks weird on bigger
+
 
 Notes:
 
