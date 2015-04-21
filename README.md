@@ -18,7 +18,7 @@ Update 21/4:
 
 Notes:
 
-The core of the code has been restructured so that each builder owns a queue of current work for them, and they process the work from their queue. Also now using T__'s [fantastic Gridnav implementation](https://moddota.com/forums/discussion/comment/731/#Comment_731). It's somewhat expensive modifying the gridnav on the fly (generates a lot of <unit> has been thinking for <seconds>!!! warnings), might be an issue on big maps or with big buildings (multiple modifications)
+The core of the code has been restructured so that each builder owns a queue of current work for them, and they process the work from their queue. Also now using T__'s [fantastic Gridnav implementation](https://moddota.com/forums/discussion/comment/731/#Comment_731). It's somewhat expensive modifying the gridnav on the fly (generates a lot of unit has been thinking for seconds!!! warnings), might be an issue on big maps or with big buildings (multiple modifications)
 
 API Changes
 * Added onConstructionCancelled for when a player right clicks while buildings are shift queued, this is called once for each building cancelled
