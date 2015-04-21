@@ -48,9 +48,14 @@ function build( keys )
 		end
 	end)
 
-	--[[keys:OnCanceled(function()
-		print(keys.ability:GetAbilityName() .. " was canceled.")
-	end)]]
+	keys:OnConstructionFailed(function( building )
+		-- This runs when a building cannot be placed, you should refund resources if any. building is the unit that would've been built.
+		FireGameEvent( 'custom_error_show', { player_ID = pID, _error = "Building cannot be placed there!" } )
+	end)
+
+	keys:OnConstructionCancelled(function( building )
+		-- This runs when a building is cancelled, building is the unit that would've been built.
+	end)
 
 	-- Have a fire effect when the building goes below 50% health.
 	-- It will turn off it building goes above 50% health again.

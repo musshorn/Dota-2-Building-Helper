@@ -16,6 +16,8 @@ if not OutOfWorldVector then
   OutOfWorldVector = Vector(11000,11000,0)
 end
 
+MODEL_ALPHA = 100 -- Defines the transparency of the ghost model.
+
 DontCancelBuildingGhostAbils = {} -- not sure what this is for might remove.
 
 function BuildingHelper:Init(...)
@@ -34,7 +36,11 @@ function BuildingHelper:Init(...)
     --get the player that sent the command
     local cmdPlayer = Convars:GetCommandClient()
     if cmdPlayer then
-      cmdPlayer.cancelBuilding = true
+      cmdPlayer.activeBuilder:ClearQueue()
+      cmdPlayer.activeBuilding = nil
+      cmdPlayer.activeBuilder:Stop()
+      cmdPlayer.activeBuilder.ProcessingBuilding = false
+      
     end
   end, "", 0 )
 
@@ -68,28 +74,37 @@ end
 function BuildingHelper:AddBuilding(keys)
 
   -- Callbacks
+  callbacks = {}
   function keys:OnConstructionStarted( callback )
-    keys.onConstructionStarted = callback
+    callbacks.onConstructionStarted = callback
   end
 
   function keys:OnConstructionCompleted( callback )
-    keys.onConstructionCompleted = callback
+    callbacks.onConstructionCompleted = callback
+  end
+
+  function keys:OnConstructionFailed( callback ) -- Called if there is a mechanical issue with the building (cant be placed)
+    callbacks.onConstructionFailed = callback
+  end
+
+  function keys:OnConstructionCancelled( callback ) -- Called if there is a mechanical issue with the building (cant be placed)
+    callbacks.onConstructionCancelled = callback
   end
 
   function keys:EnableFireEffect( sFireEffect )
-    keys.fireEffect = sFireEffect
+    callbacks.fireEffect = sFireEffect
   end
 
   function keys:OnBelowHalfHealth( callback )
-    keys.onBelowHalfHealth = callback
+    callbacks.onBelowHalfHealth = callback
   end
 
   function keys:OnAboveHalfHealth( callback )
-    keys.onAboveHalfHealth = callback
+    callbacks.onAboveHalfHealth = callback
   end
 
   function keys:OnBuildingPosChosen( callback )
-    keys.onBuildingPosChosen = callback
+    callbacks.onBuildingPosChosen = callback
   end
 
   local ability = keys.ability
@@ -123,8 +138,11 @@ function BuildingHelper:AddBuilding(keys)
     return sVal
   end
 
+  function buildingTable:SetVal( key, value )
+    buildingTable[key] = value
+  end
 
-  -- Extract data from the KV files
+  -- Extract data from the KV files, set is called to guarantee these have values later on in execution
   local size = buildingTable:GetVal("BuildingSize", "number")
   if size == nil then
     print('[BuildingHelper] Error: ' .. abilName .. ' does not have a BuildingSize KeyValue')
@@ -141,6 +159,7 @@ function BuildingHelper:AddBuilding(keys)
   if castRange == nil then
     castRange = 200
   end
+  buildingTable:SetVal("AbilityCastRange", castRange)
 
   local fMaxScale = buildingTable:GetVal("MaxScale", "float")
   if fMaxScale == nil then
@@ -152,20 +171,14 @@ function BuildingHelper:AddBuilding(keys)
       fMaxScale = 1
     end
   end
+  buildingTable:SetVal("MaxScale", fMaxScale)
 
-  
   -- Prepare the builder, if it hasn't already been done. Since this would need to be done for every builder in some games, might as well do it here.
   local builder = keys.caster
-  if builder.buildingQueue == nil then
-    builder.buildingQueue = {}
-  end
 
-  builder.workTimer = Timers:CreateTimer(0.1, function ()
-    if #builder.buildingQueue > 0 and builder.processingWork == false then
-      builder.ProcessingBuilding = true
-      print("working on some dank meme")
-    end
-  end)
+  if builder.buildingQueue == nil then
+    InitializeBuilder(builder)
+  end
 
   -- Get the local player, this assumes the player is only placing one building at a time
   local player = builder:GetPlayerOwner()
@@ -174,33 +187,382 @@ function BuildingHelper:AddBuilding(keys)
   player.activeBuilder = builder
   player.activeBuilding = unitName
   player.activeBuildingTable = buildingTable
+  player.activeCallbacks = callbacks
 
-  player.modelGhostDummy = CreateUnitByName(unitName, OutOfWorldVector, false, nil, nil, builder:GetTeam())
-  local mgd = player.modelGhostDummy -- alias
+  FireGameEvent('build_command_executed', { player_id = pID, building_size = size })
+end
+
+
+
+--[[
+      InitializeBuildingEntity
+      * Creates the building
+
+]]--
+function BuildingHelper:InitializeBuildingEntity( keys )
+  local builder = keys.caster
+  local work = builder.work
+  local callbacks = work.callbacks
+  local unitName = work.name
+  local location = work.location
+  local player = builder:GetPlayerOwner()
+  local playersHero = player:GetAssignedHero()
+  local buildingTable = work.buildingTable
+  local size = buildingTable:GetVal("BuildingSize", "number")
+  -- Worker is done with this building
+  builder.ProcessingBuilding = false
+
+
+  -- Check gridnav.
+  for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
+    for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
+      local testLocation = Vector(x, y, location.z)
+      if GridNav:IsBlocked(testLocation) then
+        callbacks.onConstructionFailed(work)
+        return
+      end
+    end
+  end
+
+  -- Add gridnav blocker, thanks T__!
+  -- General note: updating the gridnav is expensive for the server so it causes a lot of the <unit> has been thiniking <time>!!! warnings
+  local gridNavBlockers = {}
+  for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
+    for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
+      local blockerLocation = Vector(x, y, location.z)
+      local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
+      table.insert(gridNavBlockers, ent)
+    end
+  end  
+    
+  -- Spawn the building
+  local building = CreateUnitByName(unitName, location, false, playersHero, nil, builder:GetTeam())
+  building.blockers = gridNavBlockers
+  
+
+  -- Prevent regen messing with the building spawn hp gain
+  local regen = building:GetBaseHealthRegen()
+  building:SetBaseHealthRegen(0)
+
+  local buildTime = buildingTable:GetVal("BuildTime", "float")
+  if buildTime == nil then
+    buildTime = .1
+  end
+
+  -- the gametime when the building should be completed.
+  local fTimeBuildingCompleted=GameRules:GetGameTime()+buildTime
+
+  -- whether we should update the building's health over the build time.
+  local bUpdateHealth = buildingTable:GetVal("UpdateHealth", "bool")
+  local fMaxHealth = building:GetMaxHealth()
+
+  --[[
+        Code to update unit health and scale over the build time, maths is a bit spooky but here's whats happening
+        Logic follows:
+          Calculate HP to increase every frame
+          Divide into INT and FLOAT components (SetHealth takes an int)
+          Create a timer, tick every frame
+            Increase the HP by the INT component
+            Each tick increment the FLOAT carry by the FLOAT component
+            IF the FLOAT carry > 1, reduce by one and increase the HP by one extra
+
+        Can be optimized later if updating every frame proves to be a problem
+  ]]--
+  local fAddedHealth = 0
+
+  local fserverFrameRate = 1/30 
+
+  local nHealthInterval = fMaxHealth / (buildTime / fserverFrameRate)
+  local fSmallHealthInterval = nHealthInterval - math.floor(nHealthInterval) -- just the floating point component
+  nHealthInterval = math.floor(nHealthInterval)
+  local fHPAdjustment = 0
+
+  -- whether we should scale the building.
+  local bScale = buildingTable:GetVal("Scale", "bool")
+  -- the amount to scale to.
+  local fMaxScale = buildingTable:GetVal("MaxScale", "float")
+  if fMaxScale == nil then
+    fMaxScale = 1
+  end
+
+  -- Update model size, starting with an initial size
+  local fInitialModelScale = 0.2
+  local fUpdateScaleInterval = 0.03
+
+  -- scale to add every frame, distributed by build time
+  local fScaleInterval = (fMaxScale-fInitialModelScale) / buildTime * fUpdateScaleInterval
+
+  -- start the building at 20% of max scale.
+  local fCurrentScale=.2*fMaxScale
+  local bScaling = false -- Keep tracking if we're currently model scaling.
+
+  local bPlayerCanControl = buildingTable:GetVal("PlayerCanControl", "bool")
+  if bPlayerCanControl then
+    building:SetControllableByPlayer(playersHero:GetPlayerID(), true)
+    building:SetOwner(playersHero)
+  end
+    
+  building.bUpdatingHealth = false --Keep tracking if we're currently updating health.
+
+  if bUpdateHealth then
+    building:SetHealth(1)
+    building.bUpdatingHealth = true
+  end
+
+  if bScale then
+    building:SetModelScale(fCurrentScale)
+    bScaling=true
+  end
+
+  -- Health Timers
+  -- If the tick would be faster than 1 frame, adjust the HP gained per frame
+  building.updateHealthTimer = DoUniqueString('health') 
+  Timers:CreateTimer(building.updateHealthTimer, {
+    callback = function()
+    if IsValidEntity(building) then
+      local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
+      if not timesUp then
+        if building.bUpdatingHealth then
+          fHPAdjustment = fHPAdjustment + fSmallHealthInterval
+          if fHPAdjustment > 1 then
+            building:SetHealth(building:GetHealth() + nHealthInterval + 1)
+            fHPAdjustment = fHPAdjustment - 1
+            fAddedHealth = fAddedHealth + nHealthInterval + 1
+          else
+            building:SetHealth(building:GetHealth() + nHealthInterval)
+            fAddedHealth = fAddedHealth + nHealthInterval
+          end
+        end
+      else
+        -- completion: timesUp is true
+        if callbacks.onConstructionCompleted ~= nil then
+          callbacks.onConstructionCompleted(building)
+          building.constructionCompleted = true
+          print("[BH] HP was off by:", fMaxHealth - fAddedHealth)
+          building:SetHealth(building:GetHealth() + fMaxHealth - fAddedHealth) -- round up the last little bit
+        end
+        building.bUpdatingHealth = false
+        -- clean up the timer if we don't need it.
+        return nil
+      end
+    else
+      -- not valid ent
+      return nil
+    end
+      return fserverFrameRate
+  end})
+
+  -- scale timer
+  building.updateScaleTimer = DoUniqueString('scale')
+  Timers:CreateTimer(building.updateScaleTimer, {
+    callback = function()
+      if IsValidEntity(building) then
+      local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
+      if not timesUp then
+        if bScaling then
+          if fCurrentScale < fMaxScale then
+            fCurrentScale = fCurrentScale+fScaleInterval
+            building:SetModelScale(fCurrentScale)
+          else
+            building:SetModelScale(fMaxScale)
+            bScaling = false
+          end
+        end
+      else
+        -- clean up the timer if we don't need it.
+        print("[BH] Scale was off by:", fMaxScale - fCurrentScale)
+        building:SetModelScale(fMaxScale)
+        return nil
+      end
+    else
+      -- not valid ent
+      return nil
+    end
+      return fUpdateScaleInterval
+  end})
+
+  -- OnBelowHalfHealth timer
+  building.onBelowHalfHealthProc = false
+  building.healthChecker = Timers:CreateTimer(.2, function()
+    if IsValidEntity(building) then
+      if building:GetHealth() < fMaxHealth/2.0 and not building.onBelowHalfHealthProc and not building.bUpdatingHealth then
+        if callbacks.fireEffect ~= nil then
+          building:AddNewModifier(building, nil, callbacks.fireEffect, nil)
+        end
+        callbacks.onBelowHalfHealth(unit)
+        building.onBelowHalfHealthProc = true
+      elseif building:GetHealth() >= fMaxHealth/2.0 and building.onBelowHalfHealthProc and not building.bUpdatingHealth then
+        if callbacks.fireEffect then
+          building:RemoveModifierByName(callbacks.fireEffect)
+        end
+        callbacks.onAboveHalfHealth(unit)
+        building.onBelowHalfHealthProc = false
+      end
+    else
+      return nil
+    end
+
+    return .2
+  end)
+
+  function building:RemoveBuilding( bForcedKill )
+    -- Thanks based T__
+    for k, v in pairs(building.blockers) do
+      DoEntFireByInstanceHandle(v, "Disable", "1", 0, nil, nil)
+      DoEntFireByInstanceHandle(v, "Kill", "1", 1, nil, nil)
+    end
+
+    if bForcedKill then
+      building:ForceKill(bForcedKill)
+    end
+  end
+
+  if callbacks.onConstructionStarted ~= nil then
+    callbacks.onConstructionStarted(building)
+  end
+
+  -- Remove the model particl
+  ParticleManager:DestroyParticle(work.particles, true)
+
+end
+
+--[[
+      Builder Functions
+      * Sets up all the functions required of a builder. Will run once per builder
+      * Manages each workers build queue
+]]--
+function InitializeBuilder( builder )
+  
+  builder.ProcessingBuilding = false
+
+  if builder.buildingQueue == nil then
+    builder.buildingQueue = {}
+  end
+
+
+  builder.workTimer = Timers:CreateTimer(0.1, function ()
+    if #builder.buildingQueue > 0 and builder.ProcessingBuilding == false then    
+      builder.ProcessingBuilding = true
+      builder:AddToGrid(builder.buildingQueue[1])
+      table.remove(builder.buildingQueue, 1)
+    end
+    return 0.1
+  end)
 
   function builder:AddToQueue( location )
+    -- Adds a location to the builders work queue
+
     local player = builder:GetPlayerOwner()
     local building = player.activeBuilding
     local buildingTable = player.activeBuildingTable
+    local fMaxScale = buildingTable:GetVal("MaxScale", "float")
+    local size = buildingTable:GetVal("BuildingSize", "number")
+    local callbacks = player.activeCallbacks
+
+    --if size % 2 ~= 0 then
+    --  location.y = SnapToGrid32(location.x)
+    --  location.y = SnapToGrid32(location.y)
+    --else
+      location.x = SnapToGrid64(location.x)
+      location.y = SnapToGrid64(location.y)
+    --end
+
 
     -- Create model ghost dummy out of the map, then make pretty particles
     mgd = CreateUnitByName(building, OutOfWorldVector, false, nil, nil, builder:GetTeam())
 
     --<BMD> position is 0, model attach is 1, color is CP2, alpha is CP3.x, scale is CP4.x
-    modelParticle = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/ghost_model.vpcf", PATTACH_ABSORIGIN, mgd, player)
-    ParticleManager:SetParticleControlEnt(modelParticle, 1, mgd, 1, "follow_origin", mgd:GetAbsOrigin(), true)
+    local modelParticle = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/ghost_model.vpcf", PATTACH_ABSORIGIN, mgd, player)
+    ParticleManager:SetParticleControlEnt(modelParticle, 1, mgd, 1, "follow_origin", mgd:GetAbsOrigin(), true)            
     ParticleManager:SetParticleControl(modelParticle, 3, Vector(MODEL_ALPHA,0,0))
     ParticleManager:SetParticleControl(modelParticle, 4, Vector(1,0,0))
 
-    ParticleManager:SetParticleControl(modelParticle, 0, builder:GetAbsOrigin())
-    ParticleManager:SetParticleControl(modelParticle, 2, Vector(255,255,255))
-
-    table.insert(builder.buildingQueue, {["point"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle})
-    print("drawn lmao")
+    ParticleManager:SetParticleControl(modelParticle, 0, location)
+    ParticleManager:SetParticleControl(modelParticle, 2, Vector(0,255,0)) 
 
 
+    table.insert(builder.buildingQueue, {["location"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle, ["callbacks"] = callbacks})
   end
 
-  FireGameEvent('build_command_executed', { player_id = pID, building_size = size })
+  -- Clear the build queue, the player right clicked
+  function builder:ClearQueue()
+    
+    if builder.work ~= nil then
+      ParticleManager:DestroyParticle(builder.work.particles, true)
+    end
+    builder.work.callbacks.onConstructionCancelled(builder.work)
 
+    while #builder.buildingQueue > 0 do
+      local work = builder.buildingQueue[1]
+      work.callbacks.onConstructionCancelled(work)
+      ParticleManager:DestroyParticle(work.particles, true)
+      table.remove(builder.buildingQueue, 1)
+    end
+  end
+
+  function builder:AddToGrid( work )
+    -- Processes an item of the builders work queue
+    local buildingTable = work.buildingTable
+    local castRange = buildingTable:GetVal("AbilityCastRange", "number")
+    local callbacks = work.callbacks
+    local location = work.location
+    builder.work = work
+
+
+    -- Make the caster move towards the point
+    local abilName = "move_to_point_" .. tostring(castRange)
+    if AbilityKVs[abilName] == nil then
+      print('[BuildingHelper] Error: ' .. abilName .. ' was not found in npc_abilities_custom.txt. Using the ability move_to_point_100')
+      abilName = "move_to_point_100"
+    end
+
+    -- If unit has other move_to_point abils, we should clean them up here
+    AbilityIterator(builder, function(abil)
+      local name = abil:GetAbilityName()
+      if name ~= abilName and string.starts(name, "move_to_point_") then
+        builder:RemoveAbility(name)
+        --print("removed " .. name)
+      end
+    end)
+
+    if not builder:HasAbility(abilName) then
+      builder:AddAbility(abilName)
+    end
+    local abil = builder:FindAbilityByName(abilName)
+    abil:SetLevel(1)
+
+    Timers:CreateTimer(.03, function()
+      builder:CastAbilityOnPosition(location, abil, 0)
+      if callbacks.onBuildingPosChosen ~= nil then
+        callbacks.onBuildingPosChosen(location)
+        callbacks.onBuildingPosChosen = nil
+      end
+    end)
+  end
+end
+
+
+
+--[[
+      Utility functions
+]]--
+function SnapToGrid64(coord)
+  return 64*math.floor(0.5+coord/64)
+end
+
+function SnapToGrid32(coord)
+  return 32+64*math.floor(coord/64)
+end
+
+function AbilityIterator(unit, callback)
+    for i=0, unit:GetAbilityCount()-1 do
+        local abil = unit:GetAbilityByIndex(i)
+        if abil ~= nil then
+            callback(abil)
+        end
+    end
+end
+
+function string.starts(String,Start)
+   return string.sub(String,1,string.len(Start))==Start
 end
