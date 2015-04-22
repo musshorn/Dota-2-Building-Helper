@@ -218,6 +218,7 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
       local testLocation = Vector(x, y, location.z)
       if GridNav:IsBlocked(testLocation) then
+        ParticleManager:DestroyParticle(work.particles, true)
         callbacks.onConstructionFailed(work)
         return
       end
