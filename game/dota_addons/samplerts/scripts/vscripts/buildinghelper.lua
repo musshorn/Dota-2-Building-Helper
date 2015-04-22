@@ -87,7 +87,7 @@ function BuildingHelper:AddBuilding(keys)
     callbacks.onConstructionFailed = callback
   end
 
-  function keys:OnConstructionCancelled( callback ) -- Called if there is a mechanical issue with the building (cant be placed)
+  function keys:OnConstructionCancelled( callback ) -- Called when player right clicks to cancel a queue
     callbacks.onConstructionCancelled = callback
   end
 
@@ -287,13 +287,12 @@ function BuildingHelper:InitializeBuildingEntity( keys )
 
   -- Update model size, starting with an initial size
   local fInitialModelScale = 0.2
-  local fUpdateScaleInterval = 0.03
 
   -- scale to add every frame, distributed by build time
-  local fScaleInterval = (fMaxScale-fInitialModelScale) / buildTime * fUpdateScaleInterval
+  local fScaleInterval = (fMaxScale-fInitialModelScale) / (buildTime / fserverFrameRate)
 
   -- start the building at 20% of max scale.
-  local fCurrentScale=.2*fMaxScale
+  local fCurrentScale = fInitialModelScale
   local bScaling = false -- Keep tracking if we're currently model scaling.
 
   local bPlayerCanControl = buildingTable:GetVal("PlayerCanControl", "bool")
@@ -378,7 +377,7 @@ function BuildingHelper:InitializeBuildingEntity( keys )
       -- not valid ent
       return nil
     end
-      return fUpdateScaleInterval
+      return fserverFrameRate
   end})
 
   -- OnBelowHalfHealth timer
