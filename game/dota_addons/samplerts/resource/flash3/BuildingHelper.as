@@ -23,6 +23,7 @@
 		public var globals:Object;
 		public var elementName:String;
 		public var screenWidth:int;
+		public var screenHeight:int;
 		
 		//change sound to a ui related sound
 		private var buildSound:String = "ui.inv_pickup_stone";
@@ -135,21 +136,44 @@
 		{
 			var pos:Array = globals.Game.ScreenXYToWorld(stage.mouseX, stage.mouseY);
 			
-			var mouseZ:Number = (pos[2] / 128);
-			var mouseScale = (mouseZ - 2) * 0.5 + 0.5;
-			//trace(mouseZ);
-			//trace('scale ' + String(mouseScale));
-			//trace('result ' + String(mouseZ * mouseScale) * buildingScale));
-			var ghostSize = 0.8 + 0.2 * (mouseZ - 1);
-			mouseGhost.x = stage.mouseX - mouseGhost.width / 2;
-			mouseGhost.y = stage.mouseY - mouseGhost.height / 2;
+			var mouseZ:Number = (pos[2] / 64);
 			
+			// This is pretty much all feelings based math, please change if you have better feelings
+			// I'll try explain it line-by-line as it's a long way from simple.
+			
+			// ghostSize is the zoom applied to the rectangle as you go uphill (closer to camera = bigger)
+			var ghostSize = 0.85 + 0.15 * (mouseZ - 1);
+			
+			// xSkew is what the transformation should skew the shape by on the xAxis (number between -0.5 and 0.5 - ish)
+			var xSkew = (stage.mouseX - (screenWidth / 2)) / screenWidth;
+			
+			// This shrinks the square the further towards the top of the screen it is
+			var scaleModifier = 1.0 - 0.2 * ((screenHeight - stage.mouseY) / screenHeight);
+
+
+			// This is the x-y coords of the rectangle:
+			// 		16 on both x and y sets up a nice little square in the middle of the ghost where we can move the mouse before it snaps
+			//	 	The next part defines the "snap to grid" feel of it. It's probably almost impossible to get this to align with dota's grid. Please prove me wrong
+			// 		The multiplication of the skew minimises the little triangle of non-responsiveness under/above the skewed area
+			//		One day when trapazoidal flash is developed this factor will need to change.
+			mouseGhost.x = 16 + 32 * Math.floor((stage.mouseX - mouseGhost.width / 2 - xSkew * 32) / 32.0);
+			mouseGhost.y = 16 + 32 * Math.floor((stage.mouseY - mouseGhost.height / 2)/ 32.0);
+			
+			// This is the transformation matrix that's applied to the rectangle to achive the skew effect
+			// It emulates the 3d effect of looking at things side on
+			// There's a proper explanation of these values here: http://www.senocular.com/flash/tutorials/transformmatrix/
 			var skewMatrix:Matrix = new Matrix();
 			skewMatrix.tx = mouseGhost.x;
 			skewMatrix.ty = mouseGhost.y;
-			skewMatrix.a = (ghostSize * mScaleX) * buildingScale;
-			skewMatrix.d = (ghostSize * mScaleY) * buildingScale;
-			skewMatrix.c = (stage.mouseX - (screenWidth / 2)) / screenWidth;
+
+			// This is where the resizing of the actual square takes place
+			skewMatrix.a = (ghostSize * mScaleX) * buildingScale * scaleModifier;
+			skewMatrix.d = (ghostSize * mScaleY) * buildingScale * scaleModifier;
+
+			// Apply the xSkew
+			skewMatrix.c = xSkew;
+
+			// Apply the transformation matrix to the shape. Fin.
 			mouseGhost.transform.matrix = skewMatrix;
 		}
 		
@@ -189,6 +213,7 @@
 			mScaleY = originalYScale * correctedRatio;
 					
 			screenWidth = re.ScreenWidth;
+			screenHeight = re.ScreenHeight;
 			//clickListener.screenResize(re.ScreenWidth, re.ScreenHeight, scaleRatioY, scaleRatioY, re.IsWidescreen());
 			//pass the resize event to our module, we pass the width and height of the screen, as well as the INVERSE of the stage scaling ratios.
 			

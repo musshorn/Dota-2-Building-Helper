@@ -17,11 +17,16 @@ Update 21/4:
 	- Should work in multiplayer, untested
 	- Multiple builders building multiple buildings at the same time
 
-* Known broken/buggy things:
-  - Flash green square still looks weird, too big on cliffs too. 
-  - If you click fast some mouse clicks arn't registered? Debug flashutil/code and see if it's throwing them away
-  - Gridnav is ok for 2x2 units, looks weird on bigger
+Update 22/4:
+* Bugfix edition
+  - Flash now "snaps to grid", Only problem is that it's not the dota gridnav grid and I'm not sure if it even can be
+  - Fixed flash square scaling and adjusted magic numbers to make it feel more real
+  - Fixed odd sized buildings not snapping correctly
+  - Fixed building scaling being off in some cases
+  - Fixed ghost particles not being removed correctly in some cases
 
+* Known broken/buggy things:
+  - Gridnav is ok for 2x2 units, looks weird on bigger
 
 Notes:
 
@@ -30,3 +35,4 @@ The core of the code has been restructured so that each builder owns a queue of 
 API Changes
 * Added onConstructionCancelled for when a player right clicks while buildings are shift queued, this is called once for each building cancelled
 * Added onConstructionFailed for when a building can no longer be placed on that gridnav square
+* Minimum BuildingSize is 2. T__'s point_simple_obstruction entity always takes up EXACTLY 2x2 gridnav squares (adjusting its scale didnt' seem to change anything)

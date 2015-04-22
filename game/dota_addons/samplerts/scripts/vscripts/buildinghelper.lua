@@ -459,13 +459,13 @@ function InitializeBuilder( builder )
     local size = buildingTable:GetVal("BuildingSize", "number")
     local callbacks = player.activeCallbacks
 
-    --if size % 2 ~= 0 then
-    --  location.y = SnapToGrid32(location.x)
-    --  location.y = SnapToGrid32(location.y)
-    --else
+    if size % 2 ~= 0 then
+      location.x = SnapToGrid32(location.x)
+      location.y = SnapToGrid32(location.y)
+    else
       location.x = SnapToGrid64(location.x)
       location.y = SnapToGrid64(location.y)
-    --end
+    end
 
 
     -- Create model ghost dummy out of the map, then make pretty particles
@@ -489,8 +489,8 @@ function InitializeBuilder( builder )
     
     if builder.work ~= nil then
       ParticleManager:DestroyParticle(builder.work.particles, true)
+      builder.work.callbacks.onConstructionCancelled(builder.work)
     end
-    builder.work.callbacks.onConstructionCancelled(builder.work)
 
     while #builder.buildingQueue > 0 do
       local work = builder.buildingQueue[1]
