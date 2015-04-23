@@ -18,8 +18,6 @@ end
 
 MODEL_ALPHA = 100 -- Defines the transparency of the ghost model.
 
-DontCancelBuildingGhostAbils = {} -- not sure what this is for might remove.
-
 function BuildingHelper:Init(...)
 
   Convars:RegisterCommand( "BuildingPosChosen", function()
@@ -60,9 +58,6 @@ function BuildingHelper:Init(...)
         local cancelsBuildingGhost = abil_info["CancelsBuildingGhost"]
         if isBuilding ~= nil and tostring(isBuilding) == "1" then
           BuildingAbilities[tostring(abil_name)] = abil_info
-        end
-        if cancelsBuildingGhost ~= nil and tostring(cancelsBuildingGhost) == "0" then
-          DontCancelBuildingGhostAbils[tostring(abil_name)] = true
         end
       end
     end
