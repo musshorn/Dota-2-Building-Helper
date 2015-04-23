@@ -148,6 +148,11 @@ function BuildingHelper:AddBuilding(keys)
     print('[BuildingHelper] Error: ' .. abilName .. ' does not have a BuildingSize KeyValue')
     return
   end
+  if size == 1 then
+    print('[BuildingHelper] Warning: ' .. abilName .. ' has a size of 1. Using a gridnav size of 1 is currently not supported, it was increased to 2')
+    buildingTable:SetVal("size", 2)
+    return
+  end
 
   local unitName = buildingTable:GetVal("UnitName", "string")
   if unitName == nil then
@@ -201,6 +206,7 @@ end
 ]]--
 function BuildingHelper:InitializeBuildingEntity( keys )
   local builder = keys.caster
+  local pID = builder:GetMainControllingPlayer()
   local work = builder.work
   local callbacks = work.callbacks
   local unitName = work.name
@@ -214,13 +220,30 @@ function BuildingHelper:InitializeBuildingEntity( keys )
 
 
   -- Check gridnav.
-  for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
-    for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
-      local testLocation = Vector(x, y, location.z)
-      if GridNav:IsBlocked(testLocation) then
-        ParticleManager:DestroyParticle(work.particles, true)
-        callbacks.onConstructionFailed(work)
-        return
+  if size % 2 == 1 then
+    for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 64 do
+      for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 64 do
+        local testLocation = Vector(x, y, location.z)
+        if GridNav:IsBlocked(testLocation) then
+          ParticleManager:DestroyParticle(work.particles, true)
+          if callbacks.onConstructionFailed ~= nil then
+            callbacks.onConstructionFailed(work)
+          end
+          return
+        end
+      end
+    end
+  else
+    for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
+      for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
+        local testLocation = Vector(x, y, location.z)
+        if GridNav:IsBlocked(testLocation) then
+          ParticleManager:DestroyParticle(work.particles, true)
+          if callbacks.onConstructionFailed ~= nil then
+            callbacks.onConstructionFailed(work)
+          end
+          return
+        end
       end
     end
   end
@@ -228,17 +251,30 @@ function BuildingHelper:InitializeBuildingEntity( keys )
   -- Add gridnav blocker, thanks T__!
   -- General note: updating the gridnav is expensive for the server so it causes a lot of the <unit> has been thiniking <time>!!! warnings
   local gridNavBlockers = {}
-  for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
-    for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
-      local blockerLocation = Vector(x, y, location.z)
-      local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
-      table.insert(gridNavBlockers, ent)
+  if size % 2 == 1 then
+    for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 64 do
+      for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 64 do
+        local blockerLocation = Vector(x, y, location.z)
+        local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
+        table.insert(gridNavBlockers, ent)
+      end
     end
-  end  
+  else
+    for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
+      for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
+        local blockerLocation = Vector(x, y, location.z)
+        local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
+        table.insert(gridNavBlockers, ent)
+      end
+    end
+  end
+
     
   -- Spawn the building
   local building = CreateUnitByName(unitName, location, false, playersHero, nil, builder:GetTeam())
+  building:SetControllableByPlayer(pID, true)
   building.blockers = gridNavBlockers
+  building.buildingTable = buildingTable
   
 
   -- Prevent regen messing with the building spawn hp gain
@@ -467,7 +503,6 @@ function InitializeBuilder( builder )
       location.y = SnapToGrid64(location.y)
     end
 
-
     -- Create model ghost dummy out of the map, then make pretty particles
     mgd = CreateUnitByName(building, OutOfWorldVector, false, nil, nil, builder:GetTeam())
 
@@ -475,11 +510,10 @@ function InitializeBuilder( builder )
     local modelParticle = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/ghost_model.vpcf", PATTACH_ABSORIGIN, mgd, player)
     ParticleManager:SetParticleControlEnt(modelParticle, 1, mgd, 1, "follow_origin", mgd:GetAbsOrigin(), true)            
     ParticleManager:SetParticleControl(modelParticle, 3, Vector(MODEL_ALPHA,0,0))
-    ParticleManager:SetParticleControl(modelParticle, 4, Vector(1,0,0))
+    ParticleManager:SetParticleControl(modelParticle, 4, Vector(fMaxScale,0,0))
 
     ParticleManager:SetParticleControl(modelParticle, 0, location)
-    ParticleManager:SetParticleControl(modelParticle, 2, Vector(0,255,0)) 
-
+    ParticleManager:SetParticleControl(modelParticle, 2, Vector(0,255,0))
 
     table.insert(builder.buildingQueue, {["location"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle, ["callbacks"] = callbacks})
   end
@@ -489,14 +523,18 @@ function InitializeBuilder( builder )
     
     if builder.work ~= nil then
       ParticleManager:DestroyParticle(builder.work.particles, true)
-      builder.work.callbacks.onConstructionCancelled(builder.work)
+      if builder.work.callbacks.onConstructionCancelled ~= nil then
+        builder.work.callbacks.onConstructionCancelled(work)
+      end
     end
 
     while #builder.buildingQueue > 0 do
       local work = builder.buildingQueue[1]
-      work.callbacks.onConstructionCancelled(work)
       ParticleManager:DestroyParticle(work.particles, true)
       table.remove(builder.buildingQueue, 1)
+      if work.callbacks.onConstructionCancelled ~= nil then
+        work.callbacks.onConstructionCancelled(work)
+      end
     end
   end
 

@@ -25,8 +25,9 @@ Update 22/4:
   - Fixed building scaling being off in some cases
   - Fixed ghost particles not being removed correctly in some cases
 
-* Known broken/buggy things:
-  - Gridnav is ok for 2x2 units, looks weird on bigger
+Update 23/4:
+* Probably a final version
+  - Few more bugs fixed with gridnav. No 1x1 point obstruction means the smallest building size has to be 2
 
 Notes:
 
@@ -36,3 +37,12 @@ API Changes
 * Added onConstructionCancelled for when a player right clicks while buildings are shift queued, this is called once for each building cancelled
 * Added onConstructionFailed for when a building can no longer be placed on that gridnav square
 * Minimum BuildingSize is 2. T__'s point_simple_obstruction entity always takes up EXACTLY 2x2 gridnav squares (adjusting its scale didnt' seem to change anything)
+
+# Future
+
+A list of dreamboat features that could be added
+
+* Add API's to adjust building properties, for example applyPercentageMaxHPModifier(float) for research that's pretty common in TD games where you might increase building health by 20%. Similar methods for armour etc. also flat values like +1000 to max hp.
+* Split the file up into 2-3 smaller files, way easier to maintain. Builders probably deserve their own file, the API+init can probably be in one
+* Solve the mystery of aligning it with the dota gridnav, also add 1x1 blockers
+* Come up with a better mapping of the 3d world to a 2d shape in flash, add the models in flash
