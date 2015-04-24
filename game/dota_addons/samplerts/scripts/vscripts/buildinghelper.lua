@@ -366,12 +366,12 @@ function BuildingHelper:InitializeBuildingEntity( keys )
         end
       else
         -- completion: timesUp is true
-        if callbacks.onConstructionCompleted ~= nil then
+        building:SetHealth(building:GetHealth() + fMaxHealth - fAddedHealth) -- round up the last little bit
+        if callbacks.onConstructionCompleted ~= nil and building:IsAlive() then
           callbacks.onConstructionCompleted(building)
-          building.constructionCompleted = true
-          print("[BH] HP was off by:", fMaxHealth - fAddedHealth)
-          building:SetHealth(building:GetHealth() + fMaxHealth - fAddedHealth) -- round up the last little bit
         end
+        building.constructionCompleted = true
+        print("[BH] HP was off by:", fMaxHealth - fAddedHealth)
         building.bUpdatingHealth = false
         -- clean up the timer if we don't need it.
         return nil
