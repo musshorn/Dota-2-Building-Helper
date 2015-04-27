@@ -136,29 +136,36 @@
 		{
 			var pos:Array = globals.Game.ScreenXYToWorld(stage.mouseX, stage.mouseY);
 			
+			var mouseX:Number = (pos[0]);
+			var mouseY:Number = (pos[1]);
 			var mouseZ:Number = (pos[2] / 64);
 			
 			// This is pretty much all feelings based math, please change if you have better feelings
 			// I'll try explain it line-by-line as it's a long way from simple.
 			
 			// ghostSize is the zoom applied to the rectangle as you go uphill (closer to camera = bigger)
-			var ghostSize = 0.85 + 0.15 * (mouseZ - 1);
+			var ghostSize = 1.0 + 0.15 * (mouseZ - 1);
 			
-			// xSkew is what the transformation should skew the shape by on the xAxis (number between -0.5 and 0.5 - ish)
-			var xSkew = (stage.mouseX - (screenWidth / 2)) / screenWidth;
+			// xSkew is what the transformation should skew the shape by on the xAxis (number between -0.25 and 0.25 - ish)
+			var xSkew = ((stage.mouseX - (screenWidth / 2)) / screenWidth) / 2;
 			
-			// This shrinks the square the further towards the top of the screen it is
-			var scaleModifier = 1.0 - 0.2 * ((screenHeight - stage.mouseY) / screenHeight);
-
-
+			// Because the shape changes as we move up or down the screen we have to adjust the position relative to the screen height
+			var xPosScaleModifier = 1.5 - 1.20 * ((screenHeight - stage.mouseY) / screenHeight);
+			var yPosScaleModifier = 1.6 - 1.35 * ((screenHeight - stage.mouseY) / screenHeight);
+			
+			// Size of the building changes with distance from the top of the screen
+			var xSizeScaleModifier = 1.5 - 0.9 * ((screenHeight - stage.mouseY) / screenHeight);
+			var ySizeScaleModifier = 1.5 - 1.25 * ((screenHeight - stage.mouseY) / screenHeight);
+			
 			// This is the x-y coords of the rectangle:
 			// 		16 on both x and y sets up a nice little square in the middle of the ghost where we can move the mouse before it snaps
 			//	 	The next part defines the "snap to grid" feel of it. It's probably almost impossible to get this to align with dota's grid. Please prove me wrong
-			// 		The multiplication of the skew minimises the little triangle of non-responsiveness under/above the skewed area
+			// 		The multiplication of the skew min imises the little triangle of non-responsiveness under/above the skewed area
 			//		One day when trapazoidal flash is developed this factor will need to change.
-			mouseGhost.x = 16 + 32 * Math.floor((stage.mouseX - mouseGhost.width / 2 - xSkew * 32) / 32.0);
-			mouseGhost.y = 16 + 32 * Math.floor((stage.mouseY - mouseGhost.height / 2)/ 32.0);
 			
+			mouseGhost.x = 16 * xPosScaleModifier + 32 * Math.floor((stage.mouseX - mouseGhost.width / 2 - xSkew * 32 ) / 32.0);
+			mouseGhost.y = 16 * yPosScaleModifier + 32 * Math.floor((stage.mouseY - mouseGhost.height / 2 )/ 32.0);
+
 			// This is the transformation matrix that's applied to the rectangle to achive the skew effect
 			// It emulates the 3d effect of looking at things side on
 			// There's a proper explanation of these values here: http://www.senocular.com/flash/tutorials/transformmatrix/
@@ -167,8 +174,8 @@
 			skewMatrix.ty = mouseGhost.y;
 
 			// This is where the resizing of the actual square takes place
-			skewMatrix.a = (ghostSize * mScaleX) * buildingScale * scaleModifier;
-			skewMatrix.d = (ghostSize * mScaleY) * buildingScale * scaleModifier;
+			skewMatrix.a = (ghostSize * mScaleX) * buildingScale * xSizeScaleModifier;
+			skewMatrix.d = (ghostSize * mScaleY) * buildingScale * ySizeScaleModifier;
 
 			// Apply the xSkew
 			skewMatrix.c = xSkew;
