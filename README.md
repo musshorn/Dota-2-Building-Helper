@@ -14,10 +14,15 @@ If you want the current actually functional Building Helper, go here. [Building-
 
 The core of the code has been restructured so that each builder owns a queue of current work for them, and they process the work from their queue. Also now using T__'s [fantastic Gridnav implementation](https://moddota.com/forums/discussion/comment/731/#Comment_731). 
 
-API Changes
+# API Changes
 * Added onConstructionCancelled for when a player right clicks while buildings are shift queued, this is called once for each building cancelled
 * Added onConstructionFailed for when a building can no longer be placed on that gridnav square
 * Minimum BuildingSize is 2. T__'s point_simple_obstruction entity always takes up EXACTLY 2x2 gridnav squares (adjusting its scale didnt' seem to change anything)
+
+# Issues
+* The flash-side green square overlay is currently coded for a game with the camera height at 1500, I'll shift the scaling functions to lua at some point so it can be adjusted for any camera height. At the moment they are hard coded numbers in the flash
+* Currently using simple linear approximations for the green square. Quadratic approximations should fit significantly better, especially as the mouse moves up/down the screen. [See Here](https://github.com/snipplets/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/resource/flash3/BuildingHelper.as#L135)
+If you want to help with either of these, make pull requests!
 
 # Future
 
@@ -29,11 +34,10 @@ A list of dreamboat features that could be added
 * Come up with a better mapping of the 3d world to a 2d shape in flash, add the models in flash
 
 # Blog
-Update 21/4:
-* First "Viable" release
-  - Shift-queue implemented
-  - Should work in multiplayer, untested
-  - Multiple builders building multiple buildings at the same time
+
+Update 23/4:
+* Probably a final version
+  - Few more bugs fixed with gridnav. No 1x1 point obstruction means the smallest building size has to be 2
 
 Update 22/4:
 * Bugfix edition
@@ -43,6 +47,9 @@ Update 22/4:
   - Fixed building scaling being off in some cases
   - Fixed ghost particles not being removed correctly in some cases
 
-Update 23/4:
-* Probably a final version
-  - Few more bugs fixed with gridnav. No 1x1 point obstruction means the smallest building size has to be 2
+
+Update 21/4:
+* First "Viable" release
+  - Shift-queue implemented
+  - Should work in multiplayer, untested
+  - Multiple builders building multiple buildings at the same time
