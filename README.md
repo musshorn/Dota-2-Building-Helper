@@ -1,3 +1,7 @@
+# HOLD ON TO YOUR HOT CAKES
+## This project won't be updated until the new workshop tools are out so that there's a better understanding of what gaps it will need to fill.
+Also it looks like client side particles are in, so the flash can be written out. #hype.
+
 # Dota 2 Building Helper v2.1
 
 This is an attempt at rewriting most of the Building Helper core to add or improve support for:
