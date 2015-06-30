@@ -1,7 +1,3 @@
-# HOLD ON TO YOUR HOT CAKES
-## This project won't be updated until the new workshop tools are out so that there's a better understanding of what gaps it will need to fill.
-Also it looks like client side particles are in, so the flash can be written out. #hype.
-
 # Dota 2 Building Helper v2.1
 
 This is an attempt at rewriting most of the Building Helper core to add or improve support for:
@@ -38,6 +34,10 @@ A list of dreamboat features that could be added
 * Come up with a better mapping of the 3d world to a 2d shape in flash, add the models in flash
 
 # Blog
+
+Update 30/6:
+* Still waiting for a mouse API from valve. It got removed when Panorama was added in
+* Also hoping client side particles make an appearence so that building ghosts can be done properly
 
 Update 23/4:
 * Probably a final version
