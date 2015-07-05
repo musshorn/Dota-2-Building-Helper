@@ -101,7 +101,7 @@ function Precache( context )
 
 	PrecacheUnitByNameSync("npc_barracks", context) -- Building that spawns units
 	PrecacheUnitByNameSync("npc_peasant", context) -- Unit that builds and gathers resources
-	PrecacheItemByNameSync("item_rally", context) -- Flag, should be a clientside particle instead
+	PrecacheUnitByNameSync("item_rally", context) -- Flag, should be a clientside particle instead
 end
 
 -- Create the game mode when we activate

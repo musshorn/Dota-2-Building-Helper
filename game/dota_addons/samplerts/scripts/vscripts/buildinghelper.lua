@@ -20,19 +20,29 @@ MODEL_ALPHA = 100 -- Defines the transparency of the ghost model.
 
 function BuildingHelper:Init(...)
 
-  Convars:RegisterCommand( "BuildingPosChosen", function()
-    --get the player that sent the command
-    local cmdPlayer = Convars:GetCommandClient()
-    if cmdPlayer then
-      FlashUtil:GetCursorWorldPos(cmdPlayer:GetPlayerID(), function ( pID, location )
-        cmdPlayer.activeBuilder:AddToQueue(location)
-      end )
-    end
-  end, "", 0 )
+  CustomGameEventManager:RegisterListener( "building_helper_build_command", function( eventSourceIndex, args )
+    local x = args['X']
+    local y = args['Y']
+    local z = args['Z']
+    local location = Vector(x, y, z)
 
-  Convars:RegisterCommand( "CancelBuilding", function()
     --get the player that sent the command
-    local cmdPlayer = Convars:GetCommandClient()
+    local cmdPlayer = PlayerResource:GetPlayer(args['PlayerID'])
+    
+    if cmdPlayer.activeBuilder:HasAbility("has_build_queue") == false then
+      cmdPlayer.activeBuilder:AddAbility("has_build_queue")
+      local abil = cmdPlayer.activeBuilder:FindAbilityByName("has_build_queue")
+      abil:SetLevel(1)
+    end
+
+    if cmdPlayer then
+      cmdPlayer.activeBuilder:AddToQueue(location)
+    end
+  end )
+
+  CustomGameEventManager:RegisterListener( "building_helper_cancel_command", function( eventSourceIndex, args )
+    --get the player that sent the command
+    local cmdPlayer = PlayerResource:GetPlayer(args['PlayerID'])
     if cmdPlayer then
       cmdPlayer.activeBuilder:ClearQueue()
       cmdPlayer.activeBuilding = nil
@@ -40,7 +50,7 @@ function BuildingHelper:Init(...)
       cmdPlayer.activeBuilder.ProcessingBuilding = false
       
     end
-  end, "", 0 )
+  end )
 
   AbilityKVs = LoadKeyValues("scripts/npc/npc_abilities_custom.txt")
   ItemKVs = LoadKeyValues("scripts/npc/npc_items_custom.txt")
@@ -62,8 +72,6 @@ function BuildingHelper:Init(...)
       end
     end
   end
-
-
 end
 
 function BuildingHelper:AddBuilding(keys)
@@ -181,7 +189,7 @@ function BuildingHelper:AddBuilding(keys)
   end
 
   -- Get the local player, this assumes the player is only placing one building at a time
-  local player = builder:GetPlayerOwner()
+  local player = PlayerResource:GetPlayer(builder:GetMainControllingPlayer())
   
   player.buildingPosChosen = false
   player.activeBuilder = builder
@@ -189,9 +197,8 @@ function BuildingHelper:AddBuilding(keys)
   player.activeBuildingTable = buildingTable
   player.activeCallbacks = callbacks
 
-  FireGameEvent('build_command_executed', { player_id = pID, building_size = size })
+  CustomGameEventManager:Send_ServerToPlayer(player, "building_helper_enable", {["state"] = "active", ["size"] = size} )
 end
-
 
 
 --[[
@@ -206,18 +213,18 @@ function BuildingHelper:InitializeBuildingEntity( keys )
   local callbacks = work.callbacks
   local unitName = work.name
   local location = work.location
-  local player = builder:GetPlayerOwner()
+  local player = PlayerResource:GetPlayer(builder:GetMainControllingPlayer())
   local playersHero = player:GetAssignedHero()
   local buildingTable = work.buildingTable
   local size = buildingTable:GetVal("BuildingSize", "number")
+
   -- Worker is done with this building
   builder.ProcessingBuilding = false
 
-
   -- Check gridnav.
   if size % 2 == 1 then
-    for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 64 do
-      for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 64 do
+    for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 32 do
+      for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 32 do
         local testLocation = Vector(x, y, location.z)
         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           ParticleManager:DestroyParticle(work.particles, true)
@@ -229,10 +236,10 @@ function BuildingHelper:InitializeBuildingEntity( keys )
       end
     end
   else
-    for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
-      for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
+    for x = location.x - (size / 2) * 32 - 16, location.x + (size / 2) * 32 + 16, 32 do
+      for y = location.y - (size / 2) * 32 - 16, location.y + (size / 2) * 32 + 16, 32 do
         local testLocation = Vector(x, y, location.z)
-        if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
+         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           ParticleManager:DestroyParticle(work.particles, true)
           if callbacks.onConstructionFailed ~= nil then
             callbacks.onConstructionFailed(work)
@@ -255,8 +262,8 @@ function BuildingHelper:InitializeBuildingEntity( keys )
       end
     end
   else
-    for x = location.x - (size / 2) * 32 + 32, location.x + (size / 2) * 32 - 32, 64 do
-      for y = location.y - (size / 2) * 32 + 32, location.y + (size / 2) * 32 - 32, 64 do
+    for x = location.x - (size / 2) * 32 + 16, location.x + (size / 2) * 32 - 16, 96 do
+      for y = location.y - (size / 2) * 32 + 16, location.y + (size / 2) * 32 - 16, 96 do
         local blockerLocation = Vector(x, y, location.z)
         local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
         table.insert(gridNavBlockers, ent)
@@ -270,6 +277,7 @@ function BuildingHelper:InitializeBuildingEntity( keys )
   building:SetControllableByPlayer(pID, true)
   building.blockers = gridNavBlockers
   building.buildingTable = buildingTable
+  building.state = "building"
   
 
   -- Prevent regen messing with the building spawn hp gain
@@ -372,6 +380,7 @@ function BuildingHelper:InitializeBuildingEntity( keys )
         end
         building.constructionCompleted = true
         print("[BH] HP was off by:", fMaxHealth - fAddedHealth)
+        building.state = "complete"
         building.bUpdatingHealth = false
         -- clean up the timer if we don't need it.
         return nil
@@ -483,7 +492,7 @@ function InitializeBuilder( builder )
   function builder:AddToQueue( location )
     -- Adds a location to the builders work queue
 
-    local player = builder:GetPlayerOwner()
+    local player = PlayerResource:GetPlayer(builder:GetMainControllingPlayer())
     local building = player.activeBuilding
     local buildingTable = player.activeBuildingTable
     local fMaxScale = buildingTable:GetVal("MaxScale", "float")

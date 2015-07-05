@@ -8,12 +8,8 @@
 *.vsndevts_c
 *.vmat_c
 *.vtex_c
-# model shiz
-*.vmesh_c
-*.vanim_c
-*.vagrp_c
-*.vmdl_c
 *.bin
-
-# mylls junk
-*.psd
+*.vxml_c
+*.vcss_c
+*.vjs_c
+*.cfg

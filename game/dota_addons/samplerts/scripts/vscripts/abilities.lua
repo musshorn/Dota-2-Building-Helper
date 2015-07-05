@@ -70,3 +70,16 @@ function create_building_entity( keys )
 	BuildingHelper:InitializeBuildingEntity(keys)
 end
 
+function builder_queue( keys )
+	local ability = keys.ability
+  local caster = keys.caster  
+
+  if caster.ProcessingBuilding ~= nil then
+    -- caster is probably a builder, stop them
+    player = PlayerResource:GetPlayer(caster:GetMainControllingPlayer())
+    player.activeBuilder:ClearQueue()
+    player.activeBuilding = nil
+    player.activeBuilder:Stop()
+    player.activeBuilder.ProcessingBuilding = false
+  end
+end

@@ -1,0 +1,7 @@
+<root>
+	<Panel>
+    		<CustomUIElement type="Hud" layoutfile="file://{resources}/layout/custom_game/building_helper.xml" /> 
+	</Panel>
+</root>
+
+
