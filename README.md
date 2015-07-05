@@ -3,57 +3,28 @@
 This is an attempt at rewriting most of the Building Helper core to add or improve support for:
 * Multiplayer
 * Multiple builders building multiple buildings at the same time
-* Shift-Queueing (like RTS games)
-
-Be aware that this removes all of the particle code due to it's aweful performance in multiplayer. Instead the green square is done in flash and uses some spooky math to look like it's in the 3d game world and not just sitting on the screen. 
-As a result, the building model following the mouse was also lost, currently not aware of a good way to generate these in flash. The particle for it is drawn on click though.
-
-If you want the current actually functional Building Helper, go here. [Building-Helper](https://github.com/Myll/Dota-2-Building-Helper). This fork was written specifically to solve the issues detailed above.
+* Shift-Queueing (like other RTS games)
 
 # Notes:
 
-The core of the code has been restructured so that each builder owns a queue of current work for them, and they process the work from their queue. Also now using T__'s [fantastic Gridnav implementation](https://moddota.com/forums/discussion/comment/731/#Comment_731). 
+* Shift queue behaviour isn't currently "optimal", it still feels somewhat awkward.
+* Green building ghosts are only placed on click, rather than mouse move. If Valve expose a way to do client side particles then it'll be added to follow the mouse.
+* Camera height changes everything. The numbers in building_helper.js can be tweaked to whatever you need until the mystery of aligning it perfectly to gridnav is solved.
 
 # API Changes
-* Added onConstructionCancelled for when a player right clicks while buildings are shift queued, this is called once for each building cancelled
-* Added onConstructionFailed for when a building can no longer be placed on that gridnav square
-* Minimum BuildingSize is 2. T__'s point_simple_obstruction entity always takes up EXACTLY 2x2 gridnav squares (adjusting its scale didnt' seem to change anything)
+
+* Minimum BuildingSize is 2. T__'s point_simple_obstruction entity always takes up EXACTLY 2x2 gridnav squares (adjusting its scale didnt' seem to change anything). There doesnt seem to be a better way as yet to do 1x1 blocking.
 
 # Issues
-* The flash-side green square overlay is currently coded for a game with the camera height at 1500, I'll shift the scaling functions to lua at some point so it can be adjusted for any camera height. At the moment they are hard coded numbers in the flash
-* Currently using simple linear approximations for the green square. Quadratic approximations should fit significantly better, especially as the mouse moves up/down the screen. [See Here](https://github.com/snipplets/Dota-2-Building-Helper/blob/master/game/dota_addons/samplerts/resource/flash3/BuildingHelper.as#L135)
-If you want to help with either of these, make pull requests!
+
+* Snap to grid is currently broken until I can work out how to accuratly align it with the dota gridnav all the time.
 
 # Future
 
-A list of dreamboat features that could be added
+A list of features that'll be added (soon<sup>tm</sup>)
 
 * Add API's to adjust building properties, for example applyPercentageMaxHPModifier(float) for research that's pretty common in TD games where you might increase building health by 20%. Similar methods for armour etc. also flat values like +1000 to max hp.
+* Add an UpgradeBuilding API
 * Split the file up into 2-3 smaller files, way easier to maintain. Builders probably deserve their own file, the API+init can probably be in one
-* Solve the mystery of aligning it with the dota gridnav, also add 1x1 blockers
-* Come up with a better mapping of the 3d world to a 2d shape in flash, add the models in flash
-
-# Blog
-
-Update 30/6:
-* Still waiting for a mouse API from valve. It got removed when Panorama was added in
-* Also hoping client side particles make an appearence so that building ghosts can be done properly
-
-Update 23/4:
-* Probably a final version
-  - Few more bugs fixed with gridnav. No 1x1 point obstruction means the smallest building size has to be 2
-
-Update 22/4:
-* Bugfix edition
-  - Flash now "snaps to grid", Only problem is that it's not the dota gridnav grid and I'm not sure if it even can be
-  - Fixed flash square scaling and adjusted magic numbers to make it feel more real
-  - Fixed odd sized buildings not snapping correctly
-  - Fixed building scaling being off in some cases
-  - Fixed ghost particles not being removed correctly in some cases
-
-
-Update 21/4:
-* First "Viable" release
-  - Shift-queue implemented
-  - Should work in multiplayer, untested
-  - Multiple builders building multiple buildings at the same time
+* Solve the mystery of aligning it with the dota gridnav
+* Add 1x1 blockers
