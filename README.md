@@ -5,6 +5,8 @@ This is an attempt at rewriting most of the Building Helper core to add or impro
 * Multiple builders building multiple buildings at the same time
 * Shift-Queueing (like other RTS games)
 
+## [Installation Guide](https://github.com/snipplets/Dota-2-Building-Helper/wiki/Getting-Started)
+
 # Notes:
 
 * Shift queue behaviour isn't currently "optimal", it still feels somewhat awkward.
