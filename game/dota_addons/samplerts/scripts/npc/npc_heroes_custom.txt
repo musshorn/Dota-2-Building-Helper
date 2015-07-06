@@ -221,5 +221,30 @@
 		"StatusManaRegen"			"0"									// Mana regeneration rate.
 
 		"VisionNighttimeRange"		"1800"									// Range of vision at night time.
+
+		"Model" "models/heroes/tinker/tinker.vmdl"
+    "precache"
+    {
+      "model"  "models/heroes/tinker/tinker_body_head.vmdl"
+      "model"  "models/heroes/tinker/tinker_cape.vmdl"
+      "model"  "models/heroes/tinker/tinker_helmet.vmdl"
+      "model"  "models/heroes/tinker/tinker_left_arm.vmdl"
+      "model"  "models/heroes/tinker/tinker_right_arm.vmdl"
+      "model"  "models/heroes/tinker/tinker_shoulders.vmdl"
+      "particle"  "particles/units/heroes/hero_tinker.vpcf"
+    }
+
+    "Creature"
+    {
+      "AttachWearables"
+      {
+        "Wearble1"  { "ItemDef"   "466" }
+        "Wearble2"  { "ItemDef"   "467" }
+        "Wearble3"  { "ItemDef"   "465" }
+        "Wearble4"  { "ItemDef"   "464" }
+        "Wearble5"  { "ItemDef"   "463" }
+        "Wearble6"  { "ItemDef"   "367" }
+      }
+    }
 	}
 }

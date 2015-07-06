@@ -14,9 +14,6 @@ function build( keys )
 	end)
 
 	keys:OnConstructionStarted(function(unit)
-		if Debug_BH then
-			print("Started construction of " .. unit:GetUnitName())
-		end
 		-- Unit is the building be built.
 		-- Play construction sound
 		-- FindClearSpace for the builder
@@ -25,9 +22,6 @@ function build( keys )
 		unit:SetMana(0)
 	end)
 	keys:OnConstructionCompleted(function(unit)
-		if Debug_BH then
-			print("Completed construction of " .. unit:GetUnitName())
-		end
 		-- Play construction complete sound.
 		-- Give building its abilities
 		-- add the mana
@@ -37,20 +31,15 @@ function build( keys )
 	-- These callbacks will only fire when the state between below half health/above half health changes.
 	-- i.e. it won't unnecessarily fire multiple times.
 	keys:OnBelowHalfHealth(function(unit)
-		if Debug_BH then
-			print(unit:GetUnitName() .. " is below half health.")
-		end
 	end)
 
 	keys:OnAboveHalfHealth(function(unit)
-		if Debug_BH then
-			print(unit:GetUnitName() .. " is above half health.")
-		end
+
 	end)
 
 	keys:OnConstructionFailed(function( building )
 		-- This runs when a building cannot be placed, you should refund resources if any. building is the unit that would've been built.
-		FireGameEvent( 'custom_error_show', { player_ID = pID, _error = "Building cannot be placed there!" } )
+
 	end)
 
 	keys:OnConstructionCancelled(function( building )
