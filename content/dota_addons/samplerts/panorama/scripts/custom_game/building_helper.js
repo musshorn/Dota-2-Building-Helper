@@ -15,27 +15,51 @@ function StartBuildingHelper( params )
     $.Schedule(0.001, StartBuildingHelper);
     var mPos = GameUI.GetCursorPosition();
 
-    var yFactor = (mPos[1] / $( "#BuildingHelperBase").desiredlayoutheight);
+    var xOffset = Game.ScreenXYToWorld(0, 0)[0] % 64;
+    var yOffset = Game.ScreenXYToWorld(0, 0)[1] % 64;
 
-    var worldPos = [];
-    var GamePos = Game.ScreenXYToWorld(mPos[0], mPos[1]);
+    var worldPosTL = [];
+    var worldPosBR = [];
+    var GamePosTL = Game.ScreenXYToWorld(mPos[0] - (32 * size), mPos[1] - (32 * size)); // top left point
+    var GamePosBR = Game.ScreenXYToWorld(mPos[0] + (32 * size), mPos[1] + (32 * size)); // bot right point
 
-    if (GamePos[2] > 10000000) // ScreenXYToWorld returns near inf if the mouse is off screen( happens when you pan sometimes?)
+    if (GamePosTL[2] > 10000000) // ScreenXYToWorld returns near inf if the mouse is off screen( happens when you pan sometimes?)
     {
-      GamePos[2] = 0;
+      GamePosTL[2] = 0;
     }
-    worldPos[0] = Game.WorldToScreenX(GamePos[0] - 25, GamePos[1] - 25, GamePos[2]);
-    worldPos[1] = Game.WorldToScreenY(GamePos[0] - 25, GamePos[1] - 25, GamePos[2]);
 
-    var yScale = 0.57 + (mPos[1] / $( "#BuildingHelperBase").desiredlayoutheight) * 0.37 + (GamePos[2] / 256) * 0.03;
+    if (GamePosBR[2] > 10000000) // ScreenXYToWorld returns near inf if the mouse is off screen( happens when you pan sometimes?)
+    {
+      GamePosBR[2] = 0;
+    }
 
-    mPos[0] -= 32 * yScale * size;
-    mPos[1] -= 32 * yScale * size;
+    GamePosTL[0] = 64 * Math.floor((32 + GamePosTL[0]) / 64);
+    GamePosTL[1] = 64 * Math.floor((32 + GamePosTL[1]) / 64);
 
-    $( "#GreenSquare").style['height'] = String(100 * (size - 1)) + "px;";
-    $( "#GreenSquare").style['width'] = String(100 * (size - 1)) + "px;";
-    $( "#GreenSquare").style['margin'] = String(mPos[1]) + "px 0px 0px " + String(mPos[0]) + "px;";
-    $( "#GreenSquare").style['transform'] = "rotateX( 27deg);";
+    GamePosBR[0] = 64 * Math.floor((32 + GamePosBR[0]) / 64);
+    GamePosBR[1] = 64 * Math.floor((32 + GamePosBR[1]) / 64);
+
+
+
+    worldPosTL[0] = Game.WorldToScreenX(GamePosTL[0], GamePosTL[1], GamePosTL[2]) + xOffset;
+    worldPosTL[1] = Game.WorldToScreenY(GamePosTL[0], GamePosTL[1], GamePosTL[2]) + yOffset;
+
+    worldPosBR[0] = Game.WorldToScreenX(GamePosBR[0], GamePosBR[1], GamePosBR[2]) + xOffset;
+    worldPosBR[1] = Game.WorldToScreenY(GamePosBR[0], GamePosBR[1], GamePosBR[2]) + yOffset;
+
+    
+
+    var width = worldPosBR[1] - worldPosTL[1];
+    var height = worldPosBR[0] - worldPosTL[0];
+
+    $.Msg(worldPosTL, worldPosBR, width, " ", height)
+
+    var yScale = 0.57 + (mPos[1] / $( "#BuildingHelperBase").desiredlayoutheight) * 0.37 + (GamePosTL[2] / 256) * 0.03;
+
+    $( "#GreenSquare").style['height'] = String(width) + "px;";
+    $( "#GreenSquare").style['width'] = String(height) + "px;";
+    $( "#GreenSquare").style['margin'] = String(worldPosTL[1]) + "px 0px 0px " + String(worldPosTL[0]) + "px;";
+    $( "#GreenSquare").style['transform'] = "rotateX( 30deg);";
     $( "#GreenSquare").style['pre-transform-scale2d'] = String(yScale) + ";";
   }
 }
@@ -55,7 +79,7 @@ function SendBuildCommand( params )
 function SendCancelCommand( params )
 {
   state = 'disabled'
-  $( "#GreenSquare").style['margin'] = "-100px 0px 0px 0px;"; 
+  $( "#GreenSquare").style['margin'] = "-1000px 0px 0px 0px;"; 
   GameEvents.SendCustomGameEventToServer( "building_helper_cancel_command", {} );
 }
 
