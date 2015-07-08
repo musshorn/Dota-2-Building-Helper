@@ -55,7 +55,10 @@ function StartBuildingHelper( params )
     $.Msg(worldPosTL, worldPosBR, width, " ", height)
 
     var yScale = 0.57 + (mPos[1] / $( "#BuildingHelperBase").desiredlayoutheight) * 0.37 + (GamePosTL[2] / 256) * 0.03;
-
+    
+    worldPosTL[0] = (worldPosTL[0] / $( "#BuildingHelperBase").desiredlayoutwidth) * 1920;
+    worldPosTL[1] = (worldPosTL[1] / $( "#BuildingHelperBase").desiredlayoutheight) * 1080;
+    
     $( "#GreenSquare").style['height'] = String(width) + "px;";
     $( "#GreenSquare").style['width'] = String(height) + "px;";
     $( "#GreenSquare").style['margin'] = String(worldPosTL[1]) + "px 0px 0px " + String(worldPosTL[0]) + "px;";
