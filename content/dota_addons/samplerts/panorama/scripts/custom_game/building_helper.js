@@ -15,8 +15,8 @@ function StartBuildingHelper( params )
     $.Schedule(0.001, StartBuildingHelper);
     var mPos = GameUI.GetCursorPosition();
 
-    $( "#GreenSquare").style['height'] = String(100) + "px;";
-    $( "#GreenSquare").style['width'] = String(100) + "px;";
+    $( "#GreenSquare").style['height'] = String(50 * size) + "px;";
+    $( "#GreenSquare").style['width'] = String(50 * size) + "px;";
     $( "#GreenSquare").style['margin'] = String(mPos[1] - (25 * size)) + "px 0px 0px " + String(mPos[0] - (25 * size)) + "px;";
     $( "#GreenSquare").style['transform'] = "rotateX( 30deg );";
   }

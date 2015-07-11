@@ -18,40 +18,9 @@ end
 
 MODEL_ALPHA = 100 -- Defines the transparency of the ghost model.
 
+
+
 function BuildingHelper:Init(...)
-
-  CustomGameEventManager:RegisterListener( "building_helper_build_command", function( eventSourceIndex, args )
-    local x = args['X']
-    local y = args['Y']
-    local z = args['Z']
-    local location = Vector(x, y, z)
-
-    --get the player that sent the command
-    local cmdPlayer = PlayerResource:GetPlayer(args['PlayerID'])
-    
-    if cmdPlayer.activeBuilder:HasAbility("has_build_queue") == false then
-      cmdPlayer.activeBuilder:AddAbility("has_build_queue")
-      local abil = cmdPlayer.activeBuilder:FindAbilityByName("has_build_queue")
-      abil:SetLevel(1)
-    end
-
-    if cmdPlayer then
-      cmdPlayer.activeBuilder:AddToQueue(location)
-    end
-  end )
-
-  CustomGameEventManager:RegisterListener( "building_helper_cancel_command", function( eventSourceIndex, args )
-    --get the player that sent the command
-    local cmdPlayer = PlayerResource:GetPlayer(args['PlayerID'])
-    if cmdPlayer then
-      cmdPlayer.activeBuilder:ClearQueue()
-      cmdPlayer.activeBuilding = nil
-      cmdPlayer.activeBuilder:Stop()
-      cmdPlayer.activeBuilder.ProcessingBuilding = false
-      
-    end
-  end )
-
   AbilityKVs = LoadKeyValues("scripts/npc/npc_abilities_custom.txt")
   ItemKVs = LoadKeyValues("scripts/npc/npc_items_custom.txt")
   UnitKVs = LoadKeyValues("scripts/npc/npc_units_custom.txt")
@@ -71,6 +40,38 @@ function BuildingHelper:Init(...)
         end
       end
     end
+  end
+end
+
+function BuildingHelper:RegisterLeftClick( args )
+  local x = args['X']
+  local y = args['Y']
+  local z = args['Z']
+  local location = Vector(x, y, z)
+
+  --get the player that sent the command
+  local cmdPlayer = PlayerResource:GetPlayer(args['PlayerID'])
+  
+  if cmdPlayer.activeBuilder:HasAbility("has_build_queue") == false then
+    cmdPlayer.activeBuilder:AddAbility("has_build_queue")
+    local abil = cmdPlayer.activeBuilder:FindAbilityByName("has_build_queue")
+    abil:SetLevel(1)
+  end
+
+  if cmdPlayer then
+    cmdPlayer.activeBuilder:AddToQueue(location)
+  end
+end
+
+function BuildingHelper:RegisterRightClick( args )
+  --get the player that sent the command
+  local cmdPlayer = PlayerResource:GetPlayer(args['PlayerID'])
+  if cmdPlayer then
+    cmdPlayer.activeBuilder:ClearQueue()
+    cmdPlayer.activeBuilding = nil
+    cmdPlayer.activeBuilder:Stop()
+    cmdPlayer.activeBuilder.ProcessingBuilding = false
+    
   end
 end
 
@@ -184,7 +185,7 @@ function BuildingHelper:AddBuilding(keys)
   -- Prepare the builder, if it hasn't already been done. Since this would need to be done for every builder in some games, might as well do it here.
   local builder = keys.caster
 
-  if builder.buildingQueue == nil then
+  if builder.buildingQueue == nil or Timers.timers[builder.workTimer] == nil then    
     InitializeBuilder(builder)
   end
 
@@ -560,6 +561,7 @@ function InitializeBuilder( builder )
 
     while #builder.buildingQueue > 0 do
       local work = builder.buildingQueue[1]
+      print(work.particles)
       ParticleManager:DestroyParticle(work.particles, true)
       table.remove(builder.buildingQueue, 1)
       if work.callbacks.onConstructionCancelled ~= nil then
@@ -609,7 +611,7 @@ function InitializeBuilder( builder )
   end
 end
 
-
+BuildingHelper:Init()
 
 --[[
       Utility functions

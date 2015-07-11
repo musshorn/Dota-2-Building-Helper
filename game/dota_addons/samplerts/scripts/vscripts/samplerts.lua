@@ -526,6 +526,9 @@ function SampleRTS:InitSampleRTS()
 	ListenToGameEvent('dota_player_pick_hero', Dynamic_Wrap(SampleRTS, 'OnPlayerPickHero'), self)
 	ListenToGameEvent('dota_team_kill_credit', Dynamic_Wrap(SampleRTS, 'OnTeamKillCredit'), self)
 	ListenToGameEvent("player_reconnected", Dynamic_Wrap(SampleRTS, 'OnPlayerReconnect'), self)
+
+	CustomGameEventManager:RegisterListener( "building_helper_build_command", Dynamic_Wrap(BuildingHelper, "RegisterLeftClick"))
+	CustomGameEventManager:RegisterListener( "building_helper_cancel_command", Dynamic_Wrap(BuildingHelper, "RegisterRightClick"))
 	--ListenToGameEvent('player_spawn', Dynamic_Wrap(SampleRTS, 'OnPlayerSpawn'), self)
 	--ListenToGameEvent('dota_unit_event', Dynamic_Wrap(SampleRTS, 'OnDotaUnitEvent'), self)
 	--ListenToGameEvent('nommed_tree', Dynamic_Wrap(SampleRTS, 'OnPlayerAteTree'), self)
@@ -626,11 +629,6 @@ function SampleRTS:InitSampleRTS()
 	self.nDireKills = 0
 
 	self.bSeenWaitForPlayers = false
-
-	-- BH Snippet
-	-- This can be called with an optional argument: nHalfMapLength (see readme)
-	BuildingHelper:Init()
-	--BuildingHelper:BlockRectangularArea(Vector(-192,-192,0), Vector(192,192,0))
 end
 
 mode = nil
