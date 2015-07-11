@@ -507,6 +507,32 @@ function InitializeBuilder( builder )
       location.y = SnapToGrid64(location.y)
     end
 
+    if size % 2 == 1 then
+    for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 32 do
+      for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 32 do
+        local testLocation = Vector(x, y, location.z)
+        if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
+          if callbacks.onConstructionFailed ~= nil then
+            callbacks.onConstructionFailed(work)
+          end
+          return
+        end
+      end
+    end
+  else
+    for x = location.x - (size / 2) * 32 - 16, location.x + (size / 2) * 32 + 16, 32 do
+      for y = location.y - (size / 2) * 32 - 16, location.y + (size / 2) * 32 + 16, 32 do
+        local testLocation = Vector(x, y, location.z)
+         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
+          if callbacks.onConstructionFailed ~= nil then
+            callbacks.onConstructionFailed(work)
+          end
+          return
+        end
+      end
+    end
+  end
+
     -- Create model ghost dummy out of the map, then make pretty particles
     mgd = CreateUnitByName(building, OutOfWorldVector, false, nil, nil, builder:GetTeam())
 
@@ -520,11 +546,6 @@ function InitializeBuilder( builder )
     ParticleManager:SetParticleControl(modelParticle, 2, Vector(0,255,0))
 
     table.insert(builder.buildingQueue, {["location"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle, ["callbacks"] = callbacks})
-
-    if callbacks.onBuildingPosChosen ~= nil then
-      callbacks.onBuildingPosChosen(location)
-      callbacks.onBuildingPosChosen = nil
-    end
   end
 
   -- Clear the build queue, the player right clicked
@@ -580,6 +601,10 @@ function InitializeBuilder( builder )
 
     Timers:CreateTimer(.03, function()
       builder:CastAbilityOnPosition(location, abil, 0)
+      if callbacks.onBuildingPosChosen ~= nil then
+        callbacks.onBuildingPosChosen(location)
+        callbacks.onBuildingPosChosen = nil
+      end
     end)
   end
 end
