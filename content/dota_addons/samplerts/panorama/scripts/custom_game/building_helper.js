@@ -14,8 +14,9 @@ function StartBuildingHelper( params )
   {
     $.Schedule(0.001, StartBuildingHelper);
     var mPos = GameUI.GetCursorPosition();
-    mPos[0] = (mPos[0] * 1.0 / $( "#BuildingHelperBase").actuallayoutwidth) * 1920;
-    mPos[1] = (mPos[1] * 1.0 / $( "#BuildingHelperBase").actuallayoutheight) * 1080;
+
+    mPos[0] = (mPos[0] * 1.0 / $( "#BuildingHelperBase").desiredlayoutwidth ) * Math.max(1920, $( "#BuildingHelperBase").desiredlayoutwidth );
+    mPos[1] = (mPos[1] * 1.0 / $( "#BuildingHelperBase").desiredlayoutheight) * Math.max(1080, $( "#BuildingHelperBase").desiredlayoutheight);
 
     $( "#GreenSquare").style['height'] = String(50 * size) + "px;";
     $( "#GreenSquare").style['width'] = String(50 * size) + "px;";
