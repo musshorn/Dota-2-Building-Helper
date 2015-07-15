@@ -446,6 +446,11 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     return .2
   end)
 
+  if callbacks.onConstructionStarted ~= nil then
+    callbacks.onConstructionStarted(building)
+  end
+
+
   function building:RemoveBuilding( bForcedKill )
     -- Thanks based T__
     for k, v in pairs(building.blockers) do
@@ -456,10 +461,6 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     if bForcedKill then
       building:ForceKill(bForcedKill)
     end
-  end
-
-  if callbacks.onConstructionStarted ~= nil then
-    callbacks.onConstructionStarted(building)
   end
 
   -- Remove the model particl
@@ -556,12 +557,12 @@ function InitializeBuilder( builder )
       ParticleManager:DestroyParticle(builder.work.particles, true)
       if builder.work.callbacks.onConstructionCancelled ~= nil then
         builder.work.callbacks.onConstructionCancelled(work)
+        builder.work = nil
       end
     end
 
     while #builder.buildingQueue > 0 do
       local work = builder.buildingQueue[1]
-      print(work.particles)
       ParticleManager:DestroyParticle(work.particles, true)
       table.remove(builder.buildingQueue, 1)
       if work.callbacks.onConstructionCancelled ~= nil then
