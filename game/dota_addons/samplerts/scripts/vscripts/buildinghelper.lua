@@ -75,10 +75,8 @@ function BuildingHelper:RegisterRightClick( args )
   end
 end
 
-function BuildingHelper:AddBuilding(keys)
-
-  -- Callbacks
-  callbacks = {}
+function BuildingHelper:SetCallbacks(keys)
+  local callbacks = {}
   function keys:OnConstructionStarted( callback )
     callbacks.onConstructionStarted = callback
   end
@@ -111,10 +109,13 @@ function BuildingHelper:AddBuilding(keys)
     callbacks.onBuildingPosChosen = callback
   end
 
-  local ability = keys.ability
-  local abilName = ability:GetAbilityName()
-  local buildingTable = BuildingAbilities[abilName]
-  
+  return callbacks
+end
+
+-- Setup building table, returns a constructed table.
+function BuildingHelper:SetupBuildingTable( abilityName )
+
+  local buildingTable = BuildingAbilities[abilityName]
 
   function buildingTable:GetVal( key, expectedType )
     local val = buildingTable[key]
@@ -152,8 +153,6 @@ function BuildingHelper:AddBuilding(keys)
     buildingTable[key] = value
   end
 
-  buildingTable:SetVal("AbilityHandle", ability)
-
   -- Extract data from the KV files, set is called to guarantee these have values later on in execution
   local size = buildingTable:GetVal("BuildingSize", "number")
   if size == nil then
@@ -190,6 +189,94 @@ function BuildingHelper:AddBuilding(keys)
   end
   buildingTable:SetVal("MaxScale", fMaxScale)
 
+  return buildingTable
+end
+
+-- places a building at a given location
+function BuildingHelper:PlaceBuilding( keys, location, optionalArgs )
+  callbacks = self:SetCallbacks(keys)
+
+  local ability = keys.ability
+  local pID = -1  
+  local abilName = ability:GetAbilityName()
+  local buildingTable = self:SetupBuildingTable(abilName)
+
+  local instantBuild = nil
+
+  if optionalArgs ~= nil then
+    if optionalArgs.instant ~= nil then
+      instantBuild = optionalArgs.instant
+    end
+  end
+  
+  if instantBuild == nil then
+    instantBuild = false
+  end
+
+  buildingTable:SetVal("AbilityHandle", ability)
+  local unitName = buildingTable:GetVal("UnitName", "string")
+
+  -- If this was cast by a unit, then that unit is the builder, otherwise create a "fake" builder and use the passed pID
+  local builder = nil
+  if keys.caster ~= nil then
+    builder = keys.caster
+  else
+    builder = {}
+    if optionalArgs ~= nil then
+      if optionalArgs.pID ~= nil then
+        builder.pID = optionalArgs.pID
+      end
+    end
+
+    if builder.pID == nil then
+      print("[BuildingHelper] Error: You must pass a pID if this was not made by a unit")
+      return
+    end
+    
+    function builder:GetMainControllingPlayer() 
+      return self.pID
+    end
+  end
+
+  -- Snap the location to grid
+  local size = buildingTable:GetVal("BuildingSize", "number")
+  if size % 2 ~= 0 then
+    location.x = SnapToGrid32(location.x)
+    location.y = SnapToGrid32(location.y)
+  else
+    location.x = SnapToGrid64(location.x)
+    location.y = SnapToGrid64(location.y)
+  end
+
+  local work = {["location"] = location, ["name"] = unitName, ["buildingTable"] = buildingTable, ["particles"] = -1, ["callbacks"] = callbacks, ["instantBuild"] = instantBuild}
+  builder.work = work
+
+  keys.caster = builder
+
+  -- Need a timer for the callbacks to get set
+  Timers:CreateTimer(0.03, function ()
+    self:InitializeBuildingEntity( keys )
+  end)
+  
+
+end
+
+
+function BuildingHelper:AddBuilding(keys)
+
+  -- Callbacks
+  callbacks = self:SetCallbacks(keys)
+
+
+  local ability = keys.ability
+  local abilName = ability:GetAbilityName()
+  local buildingTable = self:SetupBuildingTable(abilName) 
+
+
+  buildingTable:SetVal("AbilityHandle", ability)
+
+  local size = buildingTable:GetVal("BuildingSize", "number")
+
   -- Prepare the builder, if it hasn't already been done. Since this would need to be done for every builder in some games, might as well do it here.
   local builder = keys.caster
 
@@ -223,10 +310,11 @@ function BuildingHelper:InitializeBuildingEntity( keys )
   local callbacks = work.callbacks
   local unitName = work.name
   local location = work.location
-  local player = PlayerResource:GetPlayer(builder:GetMainControllingPlayer())
+  local player = PlayerResource:GetPlayer(pID)
   local playersHero = player:GetAssignedHero()
   local buildingTable = work.buildingTable
   local size = buildingTable:GetVal("BuildingSize", "number")
+  local instantBuild = work.instantBuild
 
   -- Worker is done with this building
   builder.ProcessingBuilding = false
@@ -294,153 +382,172 @@ function BuildingHelper:InitializeBuildingEntity( keys )
 
     
   -- Spawn the building
-  local building = CreateUnitByName(unitName, location, false, playersHero, nil, builder:GetTeam())
+  local building = CreateUnitByName(unitName, location, false, playersHero, nil, PlayerResource:GetTeam(pID))
   building:SetControllableByPlayer(pID, true)
   building.blockers = gridNavBlockers
   building.buildingTable = buildingTable
-  building.state = "building"
-  
 
-  -- Prevent regen messing with the building spawn hp gain
-  local regen = building:GetBaseHealthRegen()
-  building:SetBaseHealthRegen(0)
-
-  local buildTime = buildingTable:GetVal("BuildTime", "float")
-  if buildTime == nil then
-    buildTime = .1
-  end
-
-  -- the gametime when the building should be completed.
-  local fTimeBuildingCompleted=GameRules:GetGameTime()+buildTime
-
-  -- whether we should update the building's health over the build time.
-  local bUpdateHealth = buildingTable:GetVal("UpdateHealth", "bool")
   local fMaxHealth = building:GetMaxHealth()
 
-  --[[
-        Code to update unit health and scale over the build time, maths is a bit spooky but here's whats happening
-        Logic follows:
-          Calculate HP to increase every frame
-          Divide into INT and FLOAT components (SetHealth takes an int)
-          Create a timer, tick every frame
-            Increase the HP by the INT component
-            Each tick increment the FLOAT carry by the FLOAT component
-            IF the FLOAT carry > 1, reduce by one and increase the HP by one extra
-
-        Can be optimized later if updating every frame proves to be a problem
-  ]]--
-  local fAddedHealth = 0
-
-  local fserverFrameRate = 1/30 
-
-  local nHealthInterval = fMaxHealth / (buildTime / fserverFrameRate)
-  local fSmallHealthInterval = nHealthInterval - math.floor(nHealthInterval) -- just the floating point component
-  nHealthInterval = math.floor(nHealthInterval)
-  local fHPAdjustment = 0
-
-  -- whether we should scale the building.
-  local bScale = buildingTable:GetVal("Scale", "bool")
-  -- the amount to scale to.
-  local fMaxScale = buildingTable:GetVal("MaxScale", "float")
-  if fMaxScale == nil then
-    fMaxScale = 1
+  if callbacks.onConstructionStarted ~= nil then
+    callbacks.onConstructionStarted(building)
   end
 
-  -- Update model size, starting with an initial size
-  local fInitialModelScale = 0.2
-
-  -- scale to add every frame, distributed by build time
-  local fScaleInterval = (fMaxScale-fInitialModelScale) / (buildTime / fserverFrameRate)
-
-  -- start the building at 20% of max scale.
-  local fCurrentScale = fInitialModelScale
-  local bScaling = false -- Keep tracking if we're currently model scaling.
-
-  local bPlayerCanControl = buildingTable:GetVal("PlayerCanControl", "bool")
-  if bPlayerCanControl then
-    building:SetControllableByPlayer(playersHero:GetPlayerID(), true)
-    building:SetOwner(playersHero)
-  end
+  if instantBuild == false then
+    building.state = "building"
     
-  building.bUpdatingHealth = false --Keep tracking if we're currently updating health.
 
-  if bUpdateHealth then
-    building:SetHealth(1)
-    building.bUpdatingHealth = true
-  end
+    -- Prevent regen messing with the building spawn hp gain
+    local regen = building:GetBaseHealthRegen()
+    building:SetBaseHealthRegen(0)
 
-  if bScale then
-    building:SetModelScale(fCurrentScale)
-    bScaling=true
-  end
-
-  -- Health Timers
-  -- If the tick would be faster than 1 frame, adjust the HP gained per frame
-  building.updateHealthTimer = DoUniqueString('health') 
-  Timers:CreateTimer(building.updateHealthTimer, {
-    callback = function()
-    if IsValidEntity(building) then
-      local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
-      if not timesUp then
-        if building.bUpdatingHealth then
-          fHPAdjustment = fHPAdjustment + fSmallHealthInterval
-          if fHPAdjustment > 1 then
-            building:SetHealth(building:GetHealth() + nHealthInterval + 1)
-            fHPAdjustment = fHPAdjustment - 1
-            fAddedHealth = fAddedHealth + nHealthInterval + 1
-          else
-            building:SetHealth(building:GetHealth() + nHealthInterval)
-            fAddedHealth = fAddedHealth + nHealthInterval
-          end
-        end
-      else
-        -- completion: timesUp is true
-        building:SetHealth(building:GetHealth() + fMaxHealth - fAddedHealth) -- round up the last little bit
-        if callbacks.onConstructionCompleted ~= nil and building:IsAlive() then
-          callbacks.onConstructionCompleted(building)
-        end
-        building.constructionCompleted = true
-        print("[BH] HP was off by:", fMaxHealth - fAddedHealth)
-        building.state = "complete"
-        building.bUpdatingHealth = false
-        -- clean up the timer if we don't need it.
-        return nil
-      end
-    else
-      -- not valid ent
-      return nil
+    local buildTime = buildingTable:GetVal("BuildTime", "float")
+    if buildTime == nil then
+      buildTime = .1
     end
-      return fserverFrameRate
-  end})
 
-  -- scale timer
-  building.updateScaleTimer = DoUniqueString('scale')
-  Timers:CreateTimer(building.updateScaleTimer, {
-    callback = function()
+    -- the gametime when the building should be completed.
+    local fTimeBuildingCompleted=GameRules:GetGameTime()+buildTime
+
+    -- whether we should update the building's health over the build time.
+    local bUpdateHealth = buildingTable:GetVal("UpdateHealth", "bool")
+    
+
+    --[[
+          Code to update unit health and scale over the build time, maths is a bit spooky but here's whats happening
+          Logic follows:
+            Calculate HP to increase every frame
+            Divide into INT and FLOAT components (SetHealth takes an int)
+            Create a timer, tick every frame
+              Increase the HP by the INT component
+              Each tick increment the FLOAT carry by the FLOAT component
+              IF the FLOAT carry > 1, reduce by one and increase the HP by one extra
+
+          Can be optimized later if updating every frame proves to be a problem
+    ]]--
+    local fAddedHealth = 0
+
+    local fserverFrameRate = 1/30 
+
+    local nHealthInterval = fMaxHealth / (buildTime / fserverFrameRate)
+    local fSmallHealthInterval = nHealthInterval - math.floor(nHealthInterval) -- just the floating point component
+    nHealthInterval = math.floor(nHealthInterval)
+    local fHPAdjustment = 0
+
+    -- whether we should scale the building.
+    local bScale = buildingTable:GetVal("Scale", "bool")
+    -- the amount to scale to.
+    local fMaxScale = buildingTable:GetVal("MaxScale", "float")
+    if fMaxScale == nil then
+      fMaxScale = 1
+    end
+
+    -- Update model size, starting with an initial size
+    local fInitialModelScale = 0.2
+
+    -- scale to add every frame, distributed by build time
+    local fScaleInterval = (fMaxScale-fInitialModelScale) / (buildTime / fserverFrameRate)
+
+    -- start the building at 20% of max scale.
+    local fCurrentScale = fInitialModelScale
+    local bScaling = false -- Keep tracking if we're currently model scaling.
+
+    local bPlayerCanControl = buildingTable:GetVal("PlayerCanControl", "bool")
+    if bPlayerCanControl then
+      building:SetControllableByPlayer(playersHero:GetPlayerID(), true)
+      building:SetOwner(playersHero)
+    end
+      
+    building.bUpdatingHealth = false --Keep tracking if we're currently updating health.
+
+    if bUpdateHealth then
+      building:SetHealth(1)
+      building.bUpdatingHealth = true
+    end
+
+    if bScale then
+      building:SetModelScale(fCurrentScale)
+      bScaling=true
+    end
+
+    -- Health Timers
+    -- If the tick would be faster than 1 frame, adjust the HP gained per frame
+    building.updateHealthTimer = DoUniqueString('health') 
+    Timers:CreateTimer(building.updateHealthTimer, {
+      callback = function()
       if IsValidEntity(building) then
-      local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
-      if not timesUp then
-        if bScaling then
-          if fCurrentScale < fMaxScale then
-            fCurrentScale = fCurrentScale+fScaleInterval
-            building:SetModelScale(fCurrentScale)
-          else
-            building:SetModelScale(fMaxScale)
-            bScaling = false
+        local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
+        if not timesUp then
+          if building.bUpdatingHealth then
+            fHPAdjustment = fHPAdjustment + fSmallHealthInterval
+            if fHPAdjustment > 1 then
+              building:SetHealth(building:GetHealth() + nHealthInterval + 1)
+              fHPAdjustment = fHPAdjustment - 1
+              fAddedHealth = fAddedHealth + nHealthInterval + 1
+            else
+              building:SetHealth(building:GetHealth() + nHealthInterval)
+              fAddedHealth = fAddedHealth + nHealthInterval
+            end
           end
+        else
+          -- completion: timesUp is true
+          building:SetHealth(building:GetHealth() + fMaxHealth - fAddedHealth) -- round up the last little bit
+          if callbacks.onConstructionCompleted ~= nil and building:IsAlive() then
+            callbacks.onConstructionCompleted(building)
+          end
+          building.constructionCompleted = true
+          print("[BuildingHelper] HP was off by:", fMaxHealth - fAddedHealth)
+          building.state = "complete"
+          building.bUpdatingHealth = false
+          -- clean up the timer if we don't need it.
+          return nil
         end
       else
-        -- clean up the timer if we don't need it.
-        print("[BH] Scale was off by:", fMaxScale - fCurrentScale)
-        building:SetModelScale(fMaxScale)
+        -- not valid ent
         return nil
       end
-    else
-      -- not valid ent
-      return nil
+        return fserverFrameRate
+    end})
+
+    -- scale timer
+    building.updateScaleTimer = DoUniqueString('scale')
+    Timers:CreateTimer(building.updateScaleTimer, {
+      callback = function()
+        if IsValidEntity(building) then
+        local timesUp = GameRules:GetGameTime() >= fTimeBuildingCompleted
+        if not timesUp then
+          if bScaling then
+            if fCurrentScale < fMaxScale then
+              fCurrentScale = fCurrentScale+fScaleInterval
+              building:SetModelScale(fCurrentScale)
+            else
+              building:SetModelScale(fMaxScale)
+              bScaling = false
+            end
+          end
+        else
+          -- clean up the timer if we don't need it.
+          print("[BuildingHelper] Scale was off by:", fMaxScale - fCurrentScale)
+          building:SetModelScale(fMaxScale)
+          return nil
+        end
+      else
+        -- not valid ent
+        return nil
+      end
+        return fserverFrameRate
+    end})
+  
+  -- Instant build = true, so just set everything and do callbacks.
+  else
+    local fMaxScale = buildingTable:GetVal("MaxScale", "float")
+    building:SetModelScale(fMaxScale)
+    building.state = "complete"
+    if callbacks.onConstructionCompleted ~= nil then
+      callbacks.onConstructionCompleted(building)
     end
-      return fserverFrameRate
-  end})
+
+  end
 
   -- OnBelowHalfHealth timer
   building.onBelowHalfHealthProc = false
@@ -465,11 +572,6 @@ function BuildingHelper:InitializeBuildingEntity( keys )
 
     return .2
   end)
-
-  if callbacks.onConstructionStarted ~= nil then
-    callbacks.onConstructionStarted(building)
-  end
-
 
   function building:RemoveBuilding( bForcedKill )
     -- Thanks based T__
@@ -569,7 +671,7 @@ function InitializeBuilder( builder )
     ParticleManager:SetParticleControl(modelParticle, 0, location)
     ParticleManager:SetParticleControl(modelParticle, 2, Vector(0,255,0))
 
-    table.insert(builder.buildingQueue, {["location"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle, ["callbacks"] = callbacks})
+    table.insert(builder.buildingQueue, {["location"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle, ["callbacks"] = callbacks, ["instantBuild"] = false})
   end
 
   -- Clear the build queue, the player right clicked
