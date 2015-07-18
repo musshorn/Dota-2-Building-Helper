@@ -52,8 +52,7 @@ function SendBuildCommand( params )
 
 function SendCancelCommand( params )
 {
-  state = 'disabled'
-  $( "#GreenSquare").style['margin'] = "-1000px 0px 0px 0px;"; 
+  EndBuildingHelper();
   GameEvents.SendCustomGameEventToServer( "building_helper_cancel_command", {} );
 }
 
