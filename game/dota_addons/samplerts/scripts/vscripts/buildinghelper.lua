@@ -114,9 +114,11 @@ function BuildingHelper:AddBuilding(keys)
   local ability = keys.ability
   local abilName = ability:GetAbilityName()
   local buildingTable = BuildingAbilities[abilName]
+  
 
   function buildingTable:GetVal( key, expectedType )
     local val = buildingTable[key]
+
     --print('val: ' .. tostring(val))
     if val == nil and expectedType == "bool" then
       return false
@@ -127,6 +129,10 @@ function BuildingHelper:AddBuilding(keys)
 
     if tostring(val) == "" then
       return nil
+    end
+
+    if expectedType == "handle" then
+      return val
     end
 
     local sVal = tostring(val)
@@ -145,6 +151,8 @@ function BuildingHelper:AddBuilding(keys)
   function buildingTable:SetVal( key, value )
     buildingTable[key] = value
   end
+
+  buildingTable:SetVal("AbilityHandle", ability)
 
   -- Extract data from the KV files, set is called to guarantee these have values later on in execution
   local size = buildingTable:GetVal("BuildingSize", "number")
@@ -198,6 +206,7 @@ function BuildingHelper:AddBuilding(keys)
   player.activeBuildingTable = buildingTable
   player.activeCallbacks = callbacks
 
+
   CustomGameEventManager:Send_ServerToPlayer(player, "building_helper_enable", {["state"] = "active", ["size"] = size} )
 end
 
@@ -221,6 +230,17 @@ function BuildingHelper:InitializeBuildingEntity( keys )
 
   -- Worker is done with this building
   builder.ProcessingBuilding = false
+  
+  -- Check if the building ability is on cooldown, if it is then it cannot be cast
+  local ability = buildingTable:GetVal("AbilityHandle", "handle")
+
+  if ability:GetCooldownTimeRemaining() > 0 then
+    ParticleManager:DestroyParticle(work.particles, true)
+    if callbacks.onConstructionFailed ~= nil then
+      callbacks.onConstructionFailed(work)
+    end
+    return
+  end
 
   -- Check gridnav.
   if size % 2 == 1 then
@@ -515,6 +535,7 @@ function InitializeBuilder( builder )
         local testLocation = Vector(x, y, location.z)
         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           if callbacks.onConstructionFailed ~= nil then
+            local work = builder.work
             callbacks.onConstructionFailed(work)
           end
           return
@@ -527,6 +548,7 @@ function InitializeBuilder( builder )
         local testLocation = Vector(x, y, location.z)
          if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           if callbacks.onConstructionFailed ~= nil then
+            local work = builder.work
             callbacks.onConstructionFailed(work)
           end
           return
