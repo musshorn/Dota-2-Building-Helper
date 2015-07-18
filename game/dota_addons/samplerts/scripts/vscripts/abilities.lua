@@ -11,10 +11,7 @@ function build( keys )
     PlayerResource:ModifyGold(pID, goldCost, false, 7) 
     ability:EndCooldown()
 
-    -- Check if player has enough resources here. If he doesn't they just return this function.
-
-    
-    local returnTable = BuildingHelper:AddBuilding(keys)
+    BuildingHelper:AddBuilding(keys)
 
     keys:OnBuildingPosChosen(function(vPos)
         --print("OnBuildingPosChosen")
