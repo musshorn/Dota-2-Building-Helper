@@ -7,7 +7,8 @@ function build( keys )
 
     -- We don't want to charge the player resources at this point
     -- This is only relevent for abilities that use AbilityGoldCost
-    local goldCost = keys.ability:GetGoldCost(-1)
+    local goldCost = ability:GetGoldCost(-1)
+
     PlayerResource:ModifyGold(pID, goldCost, false, 7) 
     ability:EndCooldown()
 
@@ -30,15 +31,49 @@ function build( keys )
 
     keys:OnConstructionStarted(function(unit)
         -- This runs as soon as the building is created
-        FindClearSpaceForUnit(keys.caster, keys.caster:GetAbsOrigin(), true)
+        --team stuff
+        local teamid = unit:GetTeamNumber() 
+        local color = SampleRTS.m_TeamColors[teamid]
+        --pedestal
+        
+        local pedestal = Entities:CreateByClassname("prop_dynamic")
+        pedestal:SetModel("models/props_teams/logo_teams_tintable.vmdl")
+        pedestal:SetRenderColor( color[1], color[2], color[3] ) 
+        pedestal:SetModelScale(0.5) 
+        pedestal:SetAbsOrigin(unit:GetAbsOrigin() - Vector(0,0,5))
+        unit.pedestal = pedestal
+        
+        local particleIndex = ParticleManager:CreateParticle("particles/tower_levels.vpcf", PATTACH_OVERHEAD_FOLLOW, unit) 
+	    --print(particleIndex)
+	    ParticleManager:SetParticleControl(particleIndex, 0, Vector(1, 0, 0))
+	    ParticleManager:SetParticleControl(particleIndex, 1, Vector(1, 0, 0))
+	    ParticleManager:SetParticleControl(particleIndex, 2, Vector(1, 0, 0))
+	    ParticleManager:SetParticleControl(particleIndex, 3, Vector(1, 0, 0))   
+	    unit.particleIndex = particleIndex 
+	    Timers:CreateTimer(1.5, function()
+        --print("ding")
+        unit:EmitSound("General.LevelUp") end) -- ding!
         ability:StartCooldown(ability:GetCooldown(-1))
 
     end)
     keys:OnConstructionCompleted(function(unit)
         -- Play construction complete sound.
-        -- Give building its abilities
-        -- add the mana
-        unit:SetMana(unit:GetMaxMana())
+        PlayerResource:IncrementDeaths(pID)
+        unit:RemoveModifierByName("modifier_building")
+        ParticleManager:SetParticleControl(unit.particleIndex, 4, Vector(1, 0, 0))
+        -- start AI
+        if unit:GetUnitName() == "npc_dota_tower_death" then 
+        attack(unit)
+        scythemaxdmg(unit)
+        elseif unit:GetUnitName() == "npc_dota_tower_arrow" then 
+        attackMagic(unit)
+        elseif unit:GetUnitName() == "npc_dota_tower_zap" then 
+        attackMagic(unit)
+        physMagicSpell(unit)
+        elseif unit:GetUnitName() == "npc_dota_tower_rocket" then 
+        PewThink(unit)
+        MissileThink(unit)  
+        end
     end)
 
     -- These callbacks will only fire when the state between below half health/above half health changes.
@@ -52,10 +87,14 @@ function build( keys )
 
     keys:OnConstructionFailed(function( building )
         -- This runs when a building cannot be placed, you should refund resources if any. building is the unit that would've been built.
+        Notifications:Bottom(player:GetPlayerID(), {text="Can't build here!", duration=1,class="ErrorMessage"})
+        player:EmitSound("General.InvalidTarget_Invulnerable") --meepmerp
+        --print("Failed")
     end)
 
     keys:OnConstructionCancelled(function( building )
         -- This runs when a building is cancelled, building is the unit that would've been built.
+        --print("Cancelled")
     end)
 
     -- Have a fire effect when the building goes below 50% health.

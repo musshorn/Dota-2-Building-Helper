@@ -255,8 +255,8 @@ function BuildingHelper:PlaceBuilding( keys, location, optionalArgs )
     location.x = SnapToGrid64(location.x)
     location.y = SnapToGrid64(location.y)
   end
-
-  local work = {["location"] = location, ["name"] = unitName, ["buildingTable"] = buildingTable, ["particles"] = -1, ["callbacks"] = callbacks, ["instantBuild"] = instantBuild}
+  
+  local work = {["location"] = location , ["name"] = unitName, ["buildingTable"] = buildingTable, ["particles"] = -1, ["callbacks"] = callbacks, ["instantBuild"] = instantBuild}
   builder.work = work
 
   keys.caster = builder
@@ -357,7 +357,7 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     for x = location.x - (size / 2) * 32 - 16, location.x + (size / 2) * 32 + 16, 32 do
       for y = location.y - (size / 2) * 32 - 16, location.y + (size / 2) * 32 + 16, 32 do
         local testLocation = Vector(x, y, location.z)
-         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
+        if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           ParticleManager:DestroyParticle(work.particles, true)
           if callbacks.onConstructionFailed ~= nil then
             callbacks.onConstructionFailed(work)
@@ -406,12 +406,15 @@ function BuildingHelper:InitializeBuildingEntity( keys )
       end
     end
   end
-    
+  
   -- Spawn the building
   local building = CreateUnitByName(unitName, location, false, playersHero, nil, PlayerResource:GetTeam(pID))
+  
   building:SetControllableByPlayer(pID, true)
   building.blockers = gridNavBlockers
   building.buildingTable = buildingTable
+
+  building:SetOrigin(building:GetAbsOrigin() + Vector(0,0,5)) -- add 5 height
 
   local fMaxHealth = building:GetMaxHealth()
 
@@ -607,7 +610,7 @@ function BuildingHelper:InitializeBuildingEntity( keys )
       DoEntFireByInstanceHandle(v, "Disable", "1", 0, nil, nil)
       DoEntFireByInstanceHandle(v, "Kill", "1", 1, nil, nil)
     end
-
+    
     if bForcedKill then
       building:ForceKill(bForcedKill)
     end
@@ -663,6 +666,26 @@ function InitializeBuilder( builder )
     for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 32 do
       for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 32 do
         local testLocation = Vector(x, y, location.z)
+        --check for no_build entity
+
+        local inTrigger = false
+        local CHECKINGRADIUS = 128
+ 
+        for _,thing in pairs(Entities:FindAllInSphere(testLocation, CHECKINGRADIUS) )  do 
+          if (thing:GetName() == "no_build") then
+               inTrigger = true
+          else
+               inTrigger = false
+          end
+ 
+          if (inTrigger == true) then
+            --cancel building
+            if callbacks.onConstructionFailed ~= nil then
+              callbacks.onConstructionFailed(work)
+            end
+            return
+          end
+        end
         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           if callbacks.onConstructionFailed ~= nil then
             local work = builder.work
@@ -676,6 +699,26 @@ function InitializeBuilder( builder )
     for x = location.x - (size / 2) * 32 - 16, location.x + (size / 2) * 32 + 16, 32 do
       for y = location.y - (size / 2) * 32 - 16, location.y + (size / 2) * 32 + 16, 32 do
         local testLocation = Vector(x, y, location.z)
+        --check for no_build entity
+
+        local inTrigger = false
+        local CHECKINGRADIUS = 128
+ 
+        for _,thing in pairs(Entities:FindAllInSphere(testLocation, CHECKINGRADIUS) )  do 
+          if (thing:GetName() == "no_build") then
+               inTrigger = true
+          else
+               inTrigger = false
+          end
+ 
+          if (inTrigger == true) then
+            --cancel building
+            if callbacks.onConstructionFailed ~= nil then
+              callbacks.onConstructionFailed(work)
+            end
+            return
+          end
+        end
          if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           if callbacks.onConstructionFailed ~= nil then
             local work = builder.work
