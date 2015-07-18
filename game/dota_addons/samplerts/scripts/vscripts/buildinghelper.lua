@@ -344,6 +344,26 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 32 do
       for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 32 do
         local testLocation = Vector(x, y, location.z)
+        --check for no_build entity
+
+        local inTrigger = false
+        local CHECKINGRADIUS = 128
+ 
+        for _,thing in pairs(Entities:FindAllInSphere(testLocation, CHECKINGRADIUS) )  do 
+          if (thing:GetName() == "no_build") then
+               inTrigger = true
+          else
+               inTrigger = false
+          end
+ 
+          if (inTrigger == true) then
+            --cancel building
+            if callbacks.onConstructionFailed ~= nil then
+              callbacks.onConstructionFailed(work)
+            end
+            return
+          end
+        end
         if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           ParticleManager:DestroyParticle(work.particles, true)
           if callbacks.onConstructionFailed ~= nil then
@@ -357,6 +377,26 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     for x = location.x - (size / 2) * 32 - 16, location.x + (size / 2) * 32 + 16, 32 do
       for y = location.y - (size / 2) * 32 - 16, location.y + (size / 2) * 32 + 16, 32 do
         local testLocation = Vector(x, y, location.z)
+        --check for no_build entity
+
+        local inTrigger = false
+        local CHECKINGRADIUS = 128
+ 
+        for _,thing in pairs(Entities:FindAllInSphere(testLocation, CHECKINGRADIUS) )  do 
+          if (thing:GetName() == "no_build") then
+               inTrigger = true
+          else
+               inTrigger = false
+          end
+ 
+          if (inTrigger == true) then
+            --cancel building
+            if callbacks.onConstructionFailed ~= nil then
+              callbacks.onConstructionFailed(work)
+            end
+            return
+          end
+        end
          if GridNav:IsBlocked(testLocation) or GridNav:IsTraversable(testLocation) == false then
           ParticleManager:DestroyParticle(work.particles, true)
           if callbacks.onConstructionFailed ~= nil then
