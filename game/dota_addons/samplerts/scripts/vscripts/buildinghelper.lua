@@ -71,12 +71,20 @@ function BuildingHelper:RegisterRightClick( args )
     cmdPlayer.activeBuilding = nil
     cmdPlayer.activeBuilder:Stop()
     cmdPlayer.activeBuilder.ProcessingBuilding = false
-    
+
+    if cmdPlayer.activeCallbacks.onConstructionCancelled ~= nil then
+      cmdPlayer.activeCallbacks.onConstructionCancelled()
+    end
   end
 end
 
 function BuildingHelper:SetCallbacks(keys)
   local callbacks = {}
+
+  function keys:OnPreConstruction( callback )
+    callbacks.onPreConstruction = callback -- Use this to handle player resources, return false to abort the build
+  end
+
   function keys:OnConstructionStarted( callback )
     callbacks.onConstructionStarted = callback
   end
@@ -421,6 +429,23 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     end
   end
 
+  if callbacks.onPreConstruction ~= nil then
+    local result = callbacks.onPreConstruction()
+    if result ~= nil then
+      if result == false then
+        if callbacks.onConstructionFailed ~= nil then
+          callbacks.onConstructionFailed(work)
+        end
+        ParticleManager:DestroyParticle(work.particles, true)
+        builder.work = nil
+        for k, v in pairs(gridNavBlockers) do
+          DoEntFireByInstanceHandle(v, "Disable", "1", 0, nil, nil)
+          DoEntFireByInstanceHandle(v, "Kill", "1", 1, nil, nil)
+        end
+        return
+      end
+    end
+  end
     
   -- Spawn the building
   local building = CreateUnitByName(unitName, location, false, playersHero, nil, PlayerResource:GetTeam(pID))
@@ -587,7 +612,6 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     if callbacks.onConstructionCompleted ~= nil then
       callbacks.onConstructionCompleted(building)
     end
-
   end
 
   -- Work is done, clear the work table.
@@ -704,7 +728,7 @@ function InitializeBuilder( builder )
   end
 
     -- Create model ghost dummy out of the map, then make pretty particles
-    mgd = CreateUnitByName(building, OutOfWorldVector, false, nil, nil, builder:GetTeam())
+    local mgd = CreateUnitByName(building, OutOfWorldVector, false, nil, nil, builder:GetTeam())
 
     --<BMD> position is 0, model attach is 1, color is CP2, alpha is CP3.x, scale is CP4.x
     local modelParticle = ParticleManager:CreateParticleForPlayer("particles/buildinghelper/ghost_model.vpcf", PATTACH_ABSORIGIN, mgd, player)
@@ -716,6 +740,7 @@ function InitializeBuilder( builder )
     ParticleManager:SetParticleControl(modelParticle, 2, Vector(0,255,0))
 
     table.insert(builder.buildingQueue, {["location"] = location, ["name"] = building, ["buildingTable"] = buildingTable, ["particles"] = modelParticle, ["callbacks"] = callbacks, ["instantBuild"] = false})
+    
   end
 
   -- Clear the build queue, the player right clicked
