@@ -550,6 +550,9 @@ function BuildingHelper:InitializeBuildingEntity( keys )
 
   end
 
+  -- Work is done, clear the work table.
+  builder.work = nil
+
   -- OnBelowHalfHealth timer
   building.onBelowHalfHealthProc = false
   building.healthChecker = Timers:CreateTimer(.2, function()
