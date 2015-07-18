@@ -39,7 +39,7 @@
 
 		// BuildingHelper info
 		"Building"						"1" //bool
-		"BuildingSize"					"3" // this is (3x64) by (3x64) units, so 9 squares.
+		"BuildingSize"					"4" // this is (3x64) by (3x64) units, so 9 squares.
 		"BuildTime"						"2.0"
 		"AbilityCastRange"				"100"
 		"UpdateHealth"					"1" //bool
@@ -49,7 +49,6 @@
 
 		"UnitName"							"npc_dota_hero_enigma"
 		"AbilityCooldown"				"10"
-		"AbilityGoldCost"				"10"
 
 		// End of BuildingHelper info
 
