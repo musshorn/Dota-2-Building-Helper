@@ -276,6 +276,7 @@ function BuildingHelper:AddBuilding(keys)
   buildingTable:SetVal("AbilityHandle", ability)
 
   local size = buildingTable:GetVal("BuildingSize", "number")
+  local unitName = buildingTable:GetVal("UnitName", "string")
 
   -- Prepare the builder, if it hasn't already been done. Since this would need to be done for every builder in some games, might as well do it here.
   local builder = keys.caster
