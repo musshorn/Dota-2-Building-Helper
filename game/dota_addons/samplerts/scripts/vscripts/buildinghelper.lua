@@ -200,72 +200,51 @@ function BuildingHelper:SetupBuildingTable( abilityName )
   return buildingTable
 end
 
--- places a building at a given location
-function BuildingHelper:PlaceBuilding( keys, location, optionalArgs )
-  callbacks = self:SetCallbacks(keys)
+--Places a new building on full health and returns the handle. Places grid nav blockers
+--Skips the construction phase and doesn't require a builder, this is most important to place the "base" buildings for the players when the game starts.
+--Make sure the position is valid before calling this in code.
+function BuildingHelper:PlaceBuilding(player, name, location, snapToGrid, blockGridNav, size)
+  
+  local pID = player:GetPlayerID()
+  local playersHero = player:GetAssignedHero()
+  
+  local gridNavBlockers = nil
+  if blockGridNav then
+    gridNavBlockers = BuildingHelper:BlockGridNavSquare(size, location)
+  end
 
-  local ability = keys.ability
-  local pID = -1  
-  local abilName = ability:GetAbilityName()
-  local buildingTable = self:SetupBuildingTable(abilName)
-
-  local instantBuild = nil
-
-  if optionalArgs ~= nil then
-    if optionalArgs.instant ~= nil then
-      instantBuild = optionalArgs.instant
+  if snapToGrid then
+    if size % 2 ~= 0 then
+      location.x = SnapToGrid32(location.x)
+      location.y = SnapToGrid32(location.y)
+    else
+      location.x = SnapToGrid64(location.x)
+      location.y = SnapToGrid64(location.y)
     end
   end
-  
-  if instantBuild == nil then
-    instantBuild = false
-  end
 
-  buildingTable:SetVal("AbilityHandle", ability)
-  local unitName = buildingTable:GetVal("UnitName", "string")
+  -- Spawn the building
+  local building = CreateUnitByName(name, location, false, playersHero, player, playersHero:GetTeamNumber())
+  building:SetControllableByPlayer(pID, true)
+  building:SetOwner(playersHero)
+  building.blockers = gridNavBlockers
+  building.state = "complete"
 
-  -- If this was cast by a unit, then that unit is the builder, otherwise create a "fake" builder and use the passed pID
-  local builder = nil
-  if keys.caster ~= nil then
-    builder = keys.caster
-  else
-    builder = {}
-    if optionalArgs ~= nil then
-      if optionalArgs.pID ~= nil then
-        builder.pID = optionalArgs.pID
+  function building:RemoveBuilding( bForcedKill )
+    if building.blockers ~= nil then
+      for k, v in pairs(building.blockers) do
+        DoEntFireByInstanceHandle(v, "Disable", "1", 0, nil, nil)
+        DoEntFireByInstanceHandle(v, "Kill", "1", 1, nil, nil)
+      end
+
+      if bForcedKill then
+        building:ForceKill(bForcedKill)
       end
     end
-
-    if builder.pID == nil then
-      print("[BuildingHelper] Error: You must pass a pID if this was not made by a unit")
-      return
-    end
-    
-    function builder:GetMainControllingPlayer() 
-      return self.pID
-    end
   end
 
-  -- Snap the location to grid
-  local size = buildingTable:GetVal("BuildingSize", "number")
-  if size % 2 ~= 0 then
-    location.x = SnapToGrid32(location.x)
-    location.y = SnapToGrid32(location.y)
-  else
-    location.x = SnapToGrid64(location.x)
-    location.y = SnapToGrid64(location.y)
-  end
-
-  local work = {["location"] = location, ["name"] = unitName, ["buildingTable"] = buildingTable, ["particles"] = -1, ["callbacks"] = callbacks, ["instantBuild"] = instantBuild}
-  builder.work = work
-
-  keys.caster = builder
-
-  -- Need a timer for the callbacks to get set
-  Timers:CreateTimer(0.03, function ()
-    self:InitializeBuildingEntity( keys )
-  end)
-  
+  -- Return the created building
+  return building
 
 end
 
@@ -331,12 +310,14 @@ function BuildingHelper:InitializeBuildingEntity( keys )
   -- Check if the building ability is on cooldown, if it is then it cannot be cast
   local ability = buildingTable:GetVal("AbilityHandle", "handle")
 
-  if ability:GetCooldownTimeRemaining() > 0 then
-    ParticleManager:DestroyParticle(work.particles, true)
-    if callbacks.onConstructionFailed ~= nil then
-      callbacks.onConstructionFailed(work)
+  if ability ~= nil then
+    if ability:GetCooldownTimeRemaining() > 0 then
+      ParticleManager:DestroyParticle(work.particles, true)
+      if callbacks.onConstructionFailed ~= nil then
+        callbacks.onConstructionFailed(work)
+      end
+      return
     end
-    return
   end
 
   -- Check gridnav.
@@ -368,27 +349,8 @@ function BuildingHelper:InitializeBuildingEntity( keys )
     end
   end
 
-  -- Add gridnav blocker, thanks T__!
-  -- General note: updating the gridnav is expensive for the server so it causes a lot of the <unit> has been thiniking <time>!!! warnings
-  local gridNavBlockers = {}
-  if size % 2 == 1 then
-    for x = location.x - (size / 2) * 32 , location.x + (size / 2) * 32 , 64 do
-      for y = location.y - (size / 2) * 32 , location.y + (size / 2) * 32 , 64 do
-        local blockerLocation = Vector(x, y, location.z)
-        local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
-        table.insert(gridNavBlockers, ent)
-      end
-    end
-  else
-    for x = location.x - (size / 2) * 32 + 16, location.x + (size / 2) * 32 - 16, 96 do
-      for y = location.y - (size / 2) * 32 + 16, location.y + (size / 2) * 32 - 16, 96 do
-        local blockerLocation = Vector(x, y, location.z)
-        local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
-        table.insert(gridNavBlockers, ent)
-      end
-    end
-  end
-
+  local gridNavBlockers = self:BlockGridNavSquare(size, location)
+  
   if callbacks.onPreConstruction ~= nil then
     local result = callbacks.onPreConstruction()
     if result ~= nil then
@@ -764,6 +726,38 @@ function InitializeBuilder( builder )
     end)
   end
 end
+
+function BuildingHelper:BlockGridNavSquare(size, location)
+
+  if size % 2 ~= 0 then
+    location.x = SnapToGrid32(location.x)
+    location.y = SnapToGrid32(location.y)
+  else
+    location.x = SnapToGrid64(location.x)
+    location.y = SnapToGrid64(location.y)
+  end
+
+  local gridNavBlockers = {}
+  if size % 2 == 1 then
+    for x = location.x - (size-2) * 32, location.x + (size-2) * 32, 64 do
+      for y = location.y - (size-2) * 32, location.y + (size-2) * 32, 64 do
+        local blockerLocation = Vector(x, y, location.z)
+        local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
+        table.insert(gridNavBlockers, ent)
+      end
+    end
+  else
+    for x = location.x - (size / 2) * 32 + 16, location.x + (size / 2) * 32 - 16, 96 do
+      for y = location.y - (size / 2) * 32 + 16, location.y + (size / 2) * 32 - 16, 96 do
+        local blockerLocation = Vector(x, y, location.z)
+        local ent = SpawnEntityFromTableSynchronous("point_simple_obstruction", {origin = blockerLocation})
+        table.insert(gridNavBlockers, ent)
+      end
+    end
+  end
+  return gridNavBlockers
+end
+
 
 BuildingHelper:Init()
 
