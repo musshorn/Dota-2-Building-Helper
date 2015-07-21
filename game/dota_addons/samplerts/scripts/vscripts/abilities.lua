@@ -73,16 +73,22 @@ end
 
 function builder_queue( keys )
     local ability = keys.ability
-    local caster = keys.caster  
+    local caster = keys.caster
 
     if caster.ProcessingBuilding ~= nil then
         -- caster is probably a builder, stop them
         player = PlayerResource:GetPlayer(caster:GetMainControllingPlayer())
         player.activeBuilding = nil
         if player.activeBuilder and IsValidEntity(player.activeBuilder) then
-            player.activeBuilder:ClearQueue()
-            player.activeBuilder:Stop()
-            player.activeBuilder.ProcessingBuilding = false
+            if player.activeBuilder == caster then
+                player.activeBuilder:ClearQueue()
+                player.activeBuilder:Stop()
+                player.activeBuilder.ProcessingBuilding = false
+            else
+                player.activeBuilder = caster
+                player.activeBuilder:ClearQueue()
+                player.activeBuilder.ProcessingBuilding = false
+            end
         end
     end
 end
