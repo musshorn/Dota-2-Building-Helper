@@ -227,6 +227,7 @@ function BuildingHelper:PlaceBuilding(player, name, location, snapToGrid, blockG
   local building = CreateUnitByName(name, location, false, playersHero, player, playersHero:GetTeamNumber())
   building:SetControllableByPlayer(pID, true)
   building:SetOwner(playersHero)
+  building:SetHullRadius( size * 32 - 32 )
   building.blockers = gridNavBlockers
   building.state = "complete"
 
@@ -372,6 +373,9 @@ function BuildingHelper:InitializeBuildingEntity( keys )
   -- Spawn the building
   local building = CreateUnitByName(unitName, location, false, playersHero, nil, PlayerResource:GetTeam(pID))
   building:SetControllableByPlayer(pID, true)
+  building:SetHullRadius( size * 32 - 32 )
+  building:SetOwner(PlayerResource:GetPlayer(pID))
+
   building.blockers = gridNavBlockers
   building.buildingTable = buildingTable
 
