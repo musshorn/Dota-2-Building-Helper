@@ -265,6 +265,7 @@ function BuildingHelper:AddBuilding(keys)
 
   local size = buildingTable:GetVal("BuildingSize", "number")
   local unitName = buildingTable:GetVal("UnitName", "string")
+  local fMaxScale = buildingTable:GetVal("MaxScale", "number")
 
   -- Prepare the builder, if it hasn't already been done. Since this would need to be done for every builder in some games, might as well do it here.
   local builder = keys.caster
@@ -282,8 +283,10 @@ function BuildingHelper:AddBuilding(keys)
   player.activeBuildingTable = buildingTable
   player.activeCallbacks = callbacks
 
+  -- Create model ghost dummy out of the map, then make pretty particles
+  player.mgd = CreateUnitByName(unitName, OutOfWorldVector, false, nil, nil, builder:GetTeam())
 
-  CustomGameEventManager:Send_ServerToPlayer(player, "building_helper_enable", {["state"] = "active", ["size"] = size} )
+  CustomGameEventManager:Send_ServerToPlayer(player, "building_helper_enable", {["state"] = "active", ["size"] = size, ["entIndex"] = player.mgd:GetEntityIndex(), ["MaxScale"] = fMaxScale} )
 end
 
 

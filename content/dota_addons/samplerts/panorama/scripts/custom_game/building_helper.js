@@ -4,26 +4,62 @@ var state = 'disabled';
 var size = 0;
 var pressedShift = false;
 
+var particle;
+
+
+function SnapToGrid64(coord){
+  return 64*Math.floor(0.5+coord/64);
+}
+
+function SnapToGrid32(coord){
+  return 32+64*Math.floor(coord/64);
+}
+
+
 function StartBuildingHelper( params )
 {
+  $.Msg(params, state)
   if (params !== undefined)
   {
+    var entIndex = params["entIndex"];
+    var MaxScale = params["MaxScale"];
+    var player = Players.GetPlayerHeroEntityIndex( Players.GetLocalPlayer() );
     state = params["state"];
     size = params["size"];
     pressedShift = GameUI.IsShiftDown();
+    
+    if (particle !== undefined) {
+      Particles.DestroyParticleEffect(particle, true)
+    }
+
+    $("#BuildingHelperBase").hittest = true;
+
+    particle = Particles.CreateParticle("particles/buildinghelper/ghost_model.vpcf", ParticleAttachment_t.PATTACH_ABSORIGIN, player);
+    Particles.SetParticleControlEnt(particle, 1, entIndex, ParticleAttachment_t.PATTACH_ABSORIGIN_FOLLOW, "follow_origin", Entities.GetAbsOrigin(entIndex), true);
+    Particles.SetParticleControl(particle, 3, [100,0,0]);
+    Particles.SetParticleControl(particle, 4, [MaxScale,0,0]);
   }
   if (state === 'active')
   {
     $.Schedule(0.001, StartBuildingHelper);
     var mPos = GameUI.GetCursorPosition();
+    var GamePos = Game.ScreenXYToWorld(mPos[0], mPos[1]);
 
-    mPos[0] = (mPos[0] * 1.0 / $( "#BuildingHelperBase").desiredlayoutwidth ) * 1920;
-    mPos[1] = (mPos[1] * 1.0 / $( "#BuildingHelperBase").desiredlayoutheight) * 1080;
+    if (size % 2 != 0) {
+      GamePos[0] = SnapToGrid32(GamePos[0]);
+      GamePos[1] = SnapToGrid32(GamePos[1]);
+    } else {
+      GamePos[0] = SnapToGrid64(GamePos[0]);
+      GamePos[1] = SnapToGrid64(GamePos[1]);
+    }
 
-    $( "#GreenSquare").style['height'] = String(50 * size) + "px;";
-    $( "#GreenSquare").style['width'] = String(50 * size) + "px;";
-    $( "#GreenSquare").style['margin'] = String(mPos[1] - (25 * size)) + "px 0px 0px " + String(mPos[0] - (25 * size)) + "px;";
-    $( "#GreenSquare").style['transform'] = "rotateX( 30deg );";
+    if (GamePos[0] > 10000000) // fix for borderless windowed players
+    {
+      GamePos = [0,0,0];
+    }
+
+    Particles.SetParticleControl(particle, 0, [GamePos[0], GamePos[1], GamePos[2] + 1]); // #JustValveThings
+    Particles.SetParticleControl(particle, 2, [0,255,0]);
 
     if ((!GameUI.IsShiftDown() && pressedShift))
     {
@@ -34,8 +70,11 @@ function StartBuildingHelper( params )
 
 function EndBuildingHelper()
 {
+  $("#BuildingHelperBase").hittest = false;
+  if (particle !== undefined) {
+    Particles.DestroyParticleEffect(particle, true)
+  }
   state = 'disabled'
-  $( "#GreenSquare").style['margin'] = "-1000px 0px 0px 0px;";
 }
 
 function SendBuildCommand( params )

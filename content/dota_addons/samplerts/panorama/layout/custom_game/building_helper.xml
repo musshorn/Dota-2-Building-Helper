@@ -6,8 +6,7 @@
     <include src="file://{resources}/scripts/custom_game/building_helper.js" />
   </scripts>
   <Panel hittest="false" class="BuildingHelperBase">
-    <Panel hittest="false" class="BuildingHelperBase" id="BuildingHelperBase">
-      <Button hittest="true" id="GreenSquare" class="GreenSquare" onmouseactivate="SendBuildCommand()" oncontextmenu="SendCancelCommand()" />
+    <Panel hittest="false" class="BuildingHelperBase" id="BuildingHelperBase" onmouseactivate="SendBuildCommand()" oncontextmenu="SendCancelCommand()">
     </Panel>
   </Panel>
 </root>
