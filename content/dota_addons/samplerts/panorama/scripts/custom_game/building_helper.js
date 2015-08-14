@@ -5,7 +5,7 @@ var size = 0;
 var pressedShift = false;
 
 var particle;
-
+var buildingBase = [];
 
 function SnapToGrid64(coord){
   return 64*Math.floor(0.5+coord/64);
@@ -28,7 +28,8 @@ function StartBuildingHelper( params )
     pressedShift = GameUI.IsShiftDown();
     
     if (particle !== undefined) {
-      Particles.DestroyParticleEffect(particle, true)
+      Particles.DestroyParticleEffect(particle, true);
+      buildingBase = [];
     }
 
     $("#BuildingHelperBase").hittest = true;
@@ -37,6 +38,19 @@ function StartBuildingHelper( params )
     Particles.SetParticleControlEnt(particle, 1, entIndex, ParticleAttachment_t.PATTACH_ABSORIGIN_FOLLOW, "follow_origin", Entities.GetAbsOrigin(entIndex), true);
     Particles.SetParticleControl(particle, 3, [100,0,0]);
     Particles.SetParticleControl(particle, 4, [MaxScale,0,0]);
+
+    for (var i = 0; i < size; i++)
+    {
+      for (var j = 0; j < size; j++)
+      {
+        buildingBase.push([Particles.CreateParticle("particles/buildinghelper/square_sprite.vpcf", ParticleAttachment_t.PATTACH_ABSORIGIN, player), i, j]);
+        var currentSquare = buildingBase[buildingBase.length - 1][0];
+        Particles.SetParticleControl(currentSquare, 1, [32,0,0]);
+        Particles.SetParticleControl(currentSquare, 3, [100,0,0]);
+      }
+    }
+
+
   }
   if (state === 'active')
   {
@@ -60,6 +74,14 @@ function StartBuildingHelper( params )
     Particles.SetParticleControl(particle, 0, [GamePos[0], GamePos[1], GamePos[2] + 1]); // #JustValveThings
     Particles.SetParticleControl(particle, 2, [0,255,0]);
 
+    var left = GamePos[0] - (size / 2) * 64 + 32;
+    var top =  GamePos[1] - (size / 2) * 64 + 32;
+    for (var i = 0; i < buildingBase.length; i++)
+    {
+      Particles.SetParticleControl(buildingBase[i][0], 0, [left + buildingBase[i][1] * 64, top + buildingBase[i][2] * 64, GamePos[2] + 1]); // #JustValveThings
+      Particles.SetParticleControl(buildingBase[i][0], 2, [0,255,0]);
+    }
+
     if ((!GameUI.IsShiftDown() && pressedShift))
     {
       EndBuildingHelper();
@@ -71,7 +93,12 @@ function EndBuildingHelper()
 {
   $("#BuildingHelperBase").hittest = false;
   if (particle !== undefined) {
-    Particles.DestroyParticleEffect(particle, true)
+    Particles.DestroyParticleEffect(particle, true);
+    for (var i = 0; i < buildingBase.length; i++)
+    {
+      Particles.DestroyParticleEffect(buildingBase[i][0], true);
+    }
+    buildingBase = [];
   }
   state = 'disabled'
 }
