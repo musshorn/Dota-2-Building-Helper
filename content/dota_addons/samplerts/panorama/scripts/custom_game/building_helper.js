@@ -18,7 +18,6 @@ function SnapToGrid32(coord){
 
 function StartBuildingHelper( params )
 {
-  $.Msg(params, state)
   if (params !== undefined)
   {
     var entIndex = params["entIndex"];
