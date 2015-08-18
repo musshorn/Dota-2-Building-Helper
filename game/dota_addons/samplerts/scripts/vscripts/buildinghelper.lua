@@ -607,6 +607,10 @@ function InitializeBuilder( builder )
       builder:AddToGrid(builder.buildingQueue[1])
       table.remove(builder.buildingQueue, 1)
     end
+
+    if not builder:IsAlive() then
+      builder:ClearQueue()
+    end
     return 0.1
   end)
 
