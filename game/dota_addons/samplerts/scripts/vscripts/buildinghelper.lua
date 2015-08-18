@@ -769,6 +769,9 @@ function BuildingHelper:BlockGridNavSquare(size, location)
   return gridNavBlockers
 end
 
+function BuildingHelper:IsBuilding( building )
+  return building.buildingTable ~= nil
+end
 
 BuildingHelper:Init()
 
